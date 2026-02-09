@@ -51,6 +51,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [controversyScore, setControversyScore] = useState(0);
     const [accountSizePreference, setAccountSizePreference] = useState(0.5);
     const [sourceDiversity, setSourceDiversity] = useState(0.5);
+    const [politicalPosition, setPoliticalPosition] = useState(null);
+    const [politicalDisagreement, setPoliticalDisagreement] = useState(null);
+    const [politicalOpinion, setPoliticalOpinion] = useState('');
+    const [showPoliticalOptions, setShowPoliticalOptions] = useState(false);
 
     const hasMembership = user?.has_membership;
 
@@ -110,6 +114,9 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 controversyScore,
                 accountSizePreference,
                 sourceDiversity,
+                politicalPosition: showPoliticalOptions ? politicalPosition : null,
+                politicalDisagreement: showPoliticalOptions ? politicalDisagreement : null,
+                politicalOpinion: showPoliticalOptions ? politicalOpinion : '',
             };
             const { data } = await api.post('/create_algorithm', payload);
             if (data.success) {
@@ -165,6 +172,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setControversyScore(0);
         setAccountSizePreference(0.5);
         setSourceDiversity(0.5);
+        setPoliticalPosition(null);
+        setPoliticalDisagreement(null);
+        setPoliticalOpinion('');
+        setShowPoliticalOptions(false);
     }
 
     const templateChange = (templateKey) => {
@@ -195,6 +206,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setControversyScore(0);
             setAccountSizePreference(0.5);
             setSourceDiversity(0.5);
+            setPoliticalPosition(null);
+            setPoliticalDisagreement(null);
+            setPoliticalOpinion('');
+            setShowPoliticalOptions(false);
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
@@ -233,6 +248,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setControversyScore(0);
             setAccountSizePreference(0.5);
             setSourceDiversity(0.5);
+            setPoliticalPosition(null);
+            setPoliticalDisagreement(null);
+            setPoliticalOpinion('');
+            setShowPoliticalOptions(false);
         }
     };
 
@@ -346,7 +365,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 }
             }
         } catch (error) {
-            console.error('Transcription error:', error);
             setError('Failed to transcribe audio');
             setTimeout(() => setError(''), 3000);
         } finally {
@@ -429,6 +447,16 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setControversyScore(parsedAlgorithmCode.controversyScore ?? 0);
             setAccountSizePreference(parsedAlgorithmCode.accountSizePreference ?? 0.5);
             setSourceDiversity(parsedAlgorithmCode.sourceDiversity ?? 0.5);
+            const hasPolitical = parsedAlgorithmCode.politicalPosition != null || parsedAlgorithmCode.politicalDisagreement != null || editingAlgorithm.political_opinion;
+            setPoliticalPosition(parsedAlgorithmCode.politicalPosition ?? null);
+            setPoliticalDisagreement(parsedAlgorithmCode.politicalDisagreement ?? null);
+            setPoliticalOpinion(editingAlgorithm.political_opinion || '');
+            if (hasPolitical) {
+                setShowPoliticalOptions(true);
+                setShowMoreOptions(false);
+            } else {
+                setShowPoliticalOptions(false);
+            }
         } else {
             startCreatingNew();
         }
@@ -519,9 +547,28 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         </select>
                     </div>
                 </div>
-                <button className="button" onClick={() => setShowMoreOptions(!showMoreOptions)} type="button">
-                    {showMoreOptions ? 'Fewer Options' : 'More Options'}
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="button" onClick={() => {
+                        const opening = !showMoreOptions;
+                        setShowMoreOptions(opening);
+                        if (opening) setShowPoliticalOptions(false);
+                    }} type="button">
+                        {showMoreOptions ? 'Fewer Options' : 'More Options'}
+                    </button>
+                    <button className="button" onClick={() => {
+                        const opening = !showPoliticalOptions;
+                        setShowPoliticalOptions(opening);
+                        if (opening) {
+                            setShowMoreOptions(false);
+                            if (politicalPosition === null) {
+                                setPoliticalPosition(0.5);
+                                setPoliticalDisagreement(0.5);
+                            }
+                        }
+                    }} type="button">
+                        {showPoliticalOptions ? 'Hide Politics' : 'Politics'}
+                    </button>
+                </div>
                 {showMoreOptions && (
                     <>
                         <div className="form-row">
@@ -1003,6 +1050,73 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                         : editingAlgorithm ? 'Save Changes' : 'Create'}
                                 </button>
                             </div>}
+                        </div>
+                    </>
+                )}
+                {showPoliticalOptions && (
+                    <>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Political Position</label>
+                                    <InfoIconWithTooltip info="Where you sit on the political spectrum. Used with your opinion text to find content that aligns or challenges your views." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={politicalPosition ?? 0.5}
+                                    onChange={e => setPoliticalPosition(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Left</span>
+                                    <span className="tiny-text">Centre</span>
+                                    <span className="tiny-text">Right</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Viewpoint Challenge</label>
+                                    <InfoIconWithTooltip info="Controls whether you see content that agrees or disagrees with your political views. Requires a political opinion below." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={politicalDisagreement ?? 0.5}
+                                    onChange={e => setPoliticalDisagreement(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Aligned</span>
+                                    <span className="tiny-text">Mixed</span>
+                                    <span className="tiny-text">Opposing</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Political Opinion</label>
+                                    <InfoIconWithTooltip info="Describe your political views. This is encrypted and only used to match content to your preferences." />
+                                </div>
+                                <textarea
+                                    className="form-textarea"
+                                    placeholder="Describe your political views..."
+                                    value={politicalOpinion}
+                                    onChange={e => {
+                                        let v = e.target.value;
+                                        if (v.length > 2000) v = v.slice(0, 2000);
+                                        setPoliticalOpinion(v);
+                                    }}
+                                />
+                                <span className="tiny-text" style={{ opacity: 0.6 }}>Your opinion is encrypted and only used for content matching</span>
+                            </div>
                         </div>
                     </>
                 )}

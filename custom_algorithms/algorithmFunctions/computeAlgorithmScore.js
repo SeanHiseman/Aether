@@ -3,21 +3,12 @@ import { fastCosineSimilarity } from "./fastCosineSimilarity.js";
 //Computes algorithm score for a single post
 export function computeAlgorithmScore(post, params) {
 	const {
-		algorithmRow, normalizedBoost, normalizedSuppress, voteImpact, sentiment, variety,
-		normalisedRecentEmbeddings, recentUpvotePosts, recentWeights, totalWeight, timeLimits,
+		algorithmRow, normalizedBoost, normalizedSuppress, normalizedPolitical, voteImpact, sentiment, variety,
+		normalisedRecentEmbeddings, recentUpvotePosts, recentWeights, totalWeight,
 		controversyScore = 0, accountSizePreference = 0.5, sourceDiversity = 0.5,
-		authorDiversity = 0.5, interactionWeights = {}, learningRate = 0.5, authorCounts = {}, 
-        sourceCounts = {}, authorKey, sourceKey
+		authorDiversity = 0.5, interactionWeights = {}, learningRate = 0.5, politicalDisagreement = 0,
+		authorCounts = {}, sourceCounts = {}, authorKey, sourceKey
 	} = params;
-
-	//Time of day filtering
-	if (timeLimits.startTime && timeLimits.endTime) {
-		const createdAt = new Date(post.created_at || post.created_at_remote);
-		const postTime = `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`;
-		if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) {
-			return null;
-		}
-	}
 
 	let postEmbedding = post.embeddings;
 	if (typeof postEmbedding === 'string') {
@@ -113,7 +104,6 @@ export function computeAlgorithmScore(post, params) {
 					ageInHours < 168 ? 'This week' : 'Older';
 	reasons.push(`${ageLabel} (+${recencyBoost.toFixed(1)})`);
 
-
 	//Controversy score (-1 to 1): boost/suppress controversial posts
 	//Only works for native posts with separate up/downvote counts
     if (controversyScore !== 0 && !post.isExternal && typeof post.upvotes === 'number' && typeof post.downvotes === 'number') {
@@ -129,6 +119,18 @@ export function computeAlgorithmScore(post, params) {
             }
         }
     }
+
+	//Political viewpoint scoring
+	if (normalizedPolitical && normalizedPolitical.length === expectedLen && politicalDisagreement > 0) {
+		const similarity = fastCosineSimilarity(normPost, normalizedPolitical);
+		const effectiveSimilarity = similarity * (1 - 2 * politicalDisagreement);
+		const politicalScore = effectiveSimilarity * 15;
+		algorithmScore += politicalScore;
+		if (Math.abs(politicalScore) > 1) {
+			const label = politicalScore > 0 ? 'Aligns with views' : 'Challenges views';
+			reasons.push(`${label} (${politicalScore > 0 ? '+' : ''}${politicalScore.toFixed(1)})`);
+		}
+	}
 
 	//Account size preference (0 = small accounts, 0.5 = neutral, 1 = popular accounts)
 	if (accountSizePreference !== 0.5 && typeof post.follower_count === 'number') {

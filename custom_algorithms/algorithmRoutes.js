@@ -2,6 +2,7 @@ import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import Bottleneck from 'bottleneck';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
+import { decrypt, encrypt } from '../functions/encryptionUtil.js';
 import fs from 'fs';
 import multer from 'multer';
 import OpenAI from 'openai';
@@ -64,6 +65,14 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	}
 });
 
+function politicalPositionToText(position) {
+    if (position <= 0.15) return 'far-left progressive political views';
+    if (position <= 0.35) return 'left-leaning liberal political views';
+    if (position <= 0.65) return 'centrist moderate political views';
+    if (position <= 0.85) return 'right-leaning conservative political views';
+    return 'far-right conservative political views';
+}
+
 const embeddingLimiter = new Bottleneck({
     maxConcurrent: 1,
     minTime: 5
@@ -108,7 +117,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                 endTime, variety, voteImpact, wordBoost, wordSuppress,
                 learningRate, interactionWeights,
                 authorDiversity, controversyScore,
-                accountSizePreference, sourceDiversity
+                accountSizePreference, sourceDiversity,
+                politicalPosition, politicalDisagreement, politicalOpinion
             } = req.body;
             const viewerId = req.session.viewer_id;
             const MAX_WORDS = 50;
@@ -162,9 +172,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                 authorDiversity: typeof authorDiversity === 'number' ? authorDiversity : 0.5,
                 controversyScore: typeof controversyScore === 'number' ? controversyScore : 0,
                 accountSizePreference: typeof accountSizePreference === 'number' ? accountSizePreference : 0.5,
-                sourceDiversity: typeof sourceDiversity === 'number' ? sourceDiversity : 0.5
+                sourceDiversity: typeof sourceDiversity === 'number' ? sourceDiversity : 0.5,
+                ...(politicalPosition != null ? { politicalPosition } : {}),
+                ...(politicalDisagreement != null ? { politicalDisagreement } : {})
             };
-
             await new Promise(resolve => setImmediate(resolve));
             //Find existing algorithm
             let existingAlgorithm = null;
@@ -222,10 +233,15 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                 );
                 await transaction.commit();
                 console.timeEnd('create_algorithm_total');
+                const fastJson = algorithm.toJSON();
+                fastJson.political_opinion = fastJson.political_opinion_encrypted
+                    ? decrypt(fastJson.political_opinion_encrypted) : '';
+                delete fastJson.political_opinion_encrypted;
+                delete fastJson.political_opinion_embedding;
                 return res.status(200).json({
                     success: true,
                     algorithm: {
-                        ...algorithm.toJSON(),
+                        ...fastJson,
                         algorithm_locations: [{ location_id: locationId }]
                     }
                 });
@@ -296,6 +312,28 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                 suppressEmbedding = existingAlgorithm.suppress_embedding;
             }
             console.timeEnd('embedding_generation');
+            //Political opinion encryption and embedding
+            const trimmedOpinion = politicalOpinion?.trim() || '';
+            const encryptedOpinion = trimmedOpinion ? encrypt(trimmedOpinion) : null;
+            let politicalOpinionEmbedding = null;
+            if (trimmedOpinion) {
+                const existingDecrypted = existingAlgorithm?.political_opinion_encrypted
+                    ? decrypt(existingAlgorithm.political_opinion_encrypted)
+                    : '';
+                if (existingDecrypted !== trimmedOpinion) {
+                    politicalOpinionEmbedding = await embeddingLimiter.schedule(() => analyser.generateEmbedding(trimmedOpinion));
+                } else {
+                    politicalOpinionEmbedding = existingAlgorithm.political_opinion_embedding;
+                }
+            } else if (politicalPosition != null) {
+                const positionText = politicalPositionToText(politicalPosition);
+                const prevPosition = prevParsedCode?.politicalPosition;
+                if (prevPosition !== politicalPosition || !existingAlgorithm?.political_opinion_embedding) {
+                    politicalOpinionEmbedding = await embeddingLimiter.schedule(() => analyser.generateEmbedding(positionText));
+                } else {
+                    politicalOpinionEmbedding = existingAlgorithm.political_opinion_embedding;
+                }
+            }
             transaction = await sequelize.transaction();
             let algorithm;
             if (existingAlgorithm) {
@@ -305,7 +343,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                         algorithm_code: algorithmCode,
                         custom_instruction: customInstruction || null,
                         boost_embedding: boostEmbedding,
-                        suppress_embedding: suppressEmbedding
+                        suppress_embedding: suppressEmbedding,
+                        political_opinion_encrypted: encryptedOpinion,
+                        political_opinion_embedding: politicalOpinionEmbedding
                     },
                     { transaction }
                 );
@@ -318,17 +358,24 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                         custom_instruction: customInstruction || null,
                         viewer_id: viewerId,
                         boost_embedding: boostEmbedding,
-                        suppress_embedding: suppressEmbedding
+                        suppress_embedding: suppressEmbedding,
+                        political_opinion_encrypted: encryptedOpinion,
+                        political_opinion_embedding: politicalOpinionEmbedding
                     },
                     { transaction }
                 );
             }
             await transaction.commit();
             console.timeEnd('create_algorithm_total');
+            const savedJson = algorithm.toJSON();
+            savedJson.political_opinion = savedJson.political_opinion_encrypted
+                ? decrypt(savedJson.political_opinion_encrypted) : '';
+            delete savedJson.political_opinion_encrypted;
+            delete savedJson.political_opinion_embedding;
             res.status(201).json({
                 success: true,
                 algorithm: {
-                    ...algorithm.toJSON(),
+                    ...savedJson,
                     algorithm_locations: [{ location_id: locationId }]
                 }
             });
@@ -379,7 +426,16 @@ router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 			}],
 			where: { viewer_id: viewerId }
 		});
-		res.status(200).json({ success: true, algorithms });
+		const decryptedAlgorithms = algorithms.map(alg => {
+			const json = alg.toJSON();
+			json.political_opinion = json.political_opinion_encrypted
+				? decrypt(json.political_opinion_encrypted)
+				: '';
+			delete json.political_opinion_encrypted;
+			delete json.political_opinion_embedding;
+			return json;
+		});
+		res.status(200).json({ success: true, algorithms: decryptedAlgorithms });
 	} catch (error) {
 		console.error(new Date().toISOString(), "/get_viewer_algorithms error:", error);
 		res.status(500).json({ success: false, message: 'Failed to get algorithms.' });

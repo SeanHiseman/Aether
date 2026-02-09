@@ -8,6 +8,8 @@ const Algorithms = sequelize.define('algorithms', {
     custom_instruction: { type: TEXT, allowNull: true },  
     boost_embedding: { type: DataTypes.JSON, allowNull: true },
     suppress_embedding: { type: DataTypes.JSON, allowNull: true },
+    political_opinion_encrypted: { type: TEXT, allowNull: true },
+    political_opinion_embedding: { type: DataTypes.JSON, allowNull: true },
     viewer_id: { type: STRING(36), allowNull: false },     
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') },

@@ -104,7 +104,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 			if (algorithmLocation) {
 				algorithmRow = await Algorithms.findOne({
-					attributes: ['algorithm_code', 'boost_embedding', 'suppress_embedding'],
+					attributes: ['algorithm_code', 'boost_embedding', 'suppress_embedding', 'political_opinion_embedding'],
 					where: { algorithm_id: algorithmLocation.algorithm_id },
 					raw: true
 				});
@@ -125,7 +125,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
 		}
 
-		const { chronology = 0, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, scoring = {}, controversyScore = 0, accountSizePreference = 0.5, sourceDiversity = 0.5, authorDiversity = 0.5, interactionWeights = {}, learningRate = 0.5 } = algorithm;
+		const { chronology = 0, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, scoring = {}, controversyScore = 0, accountSizePreference = 0.5, sourceDiversity = 0.5, authorDiversity = 0.5, interactionWeights = {}, learningRate = 0.5, politicalPosition = 0.5, politicalDisagreement = 0 } = algorithm;
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
 		const lowVoteImpact = voteImpact < 0.3;
 		const highChronology = chronology > 0.7;
@@ -186,7 +186,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 		}
 
-		const scoringParams = { voteImpact, sentiment, variety, normalisedRecentEmbeddings, recentUpvotePosts, timeLimits, controversyScore, accountSizePreference, sourceDiversity, authorDiversity, interactionWeights, learningRate };
+		const scoringParams = { voteImpact, sentiment, variety, normalisedRecentEmbeddings, recentUpvotePosts, timeLimits, controversyScore, accountSizePreference, sourceDiversity, authorDiversity, interactionWeights, learningRate, politicalDisagreement };
 
 		//Algorithm filters for native Posts
 		const algorithmFilters = {};

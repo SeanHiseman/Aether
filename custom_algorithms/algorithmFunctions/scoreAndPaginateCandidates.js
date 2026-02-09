@@ -27,7 +27,7 @@ export async function scoreAndPaginateCandidates({ nativePostIds = [], externalP
         limitedExternalIds = [];
     }
     //Pre-normalize algorithm embeddings once
-    const { normalizedBoost, normalizedSuppress } = prepareAlgorithmEmbeddings(algorithmRow);
+    const { normalizedBoost, normalizedSuppress, normalizedPolitical } = prepareAlgorithmEmbeddings(algorithmRow);
     //Pre-compute variety weights once
     const { normalisedRecentEmbeddings, recentUpvotePosts, learningRate = 0.5 } = scoringParams;
     const now = Date.now();
@@ -46,7 +46,7 @@ export async function scoreAndPaginateCandidates({ nativePostIds = [], externalP
         recentWeights = recentWeights.map(w => w / totalWeight);
     }
     //Build optimized params with pre-computed values
-    const optimizedParams = { ...scoringParams, normalizedBoost, normalizedSuppress, recentWeights, totalWeight };
+    const optimizedParams = { ...scoringParams, normalizedBoost, normalizedSuppress, normalizedPolitical, recentWeights, totalWeight };
     //Fetch post data with embeddings and account info for scoring
     let nativePosts = [];
     if (limitedNativeIds.length) {

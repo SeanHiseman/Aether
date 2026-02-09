@@ -2,7 +2,8 @@
 export function prepareAlgorithmEmbeddings(algorithmRow) {
     const result = {
         normalizedBoost: [],
-        normalizedSuppress: []
+        normalizedSuppress: [],
+        normalizedPolitical: null
     };
     if (algorithmRow?.boost_embedding) {
         let boostVecs = algorithmRow.boost_embedding;
@@ -30,6 +31,16 @@ export function prepareAlgorithmEmbeddings(algorithmRow) {
                     const m = Math.sqrt(sv.reduce((a, b) => a + b * b, 0)) || 1;
                     return sv.map(v => v / m);
                 });
+        }
+    }
+    if (algorithmRow?.political_opinion_embedding) {
+        let politicalVec = algorithmRow.political_opinion_embedding;
+        if (typeof politicalVec === 'string') {
+            try { politicalVec = JSON.parse(politicalVec); } catch { politicalVec = null; }
+        }
+        if (Array.isArray(politicalVec) && politicalVec.length > 0) {
+            const m = Math.sqrt(politicalVec.reduce((a, b) => a + b * b, 0)) || 1;
+            result.normalizedPolitical = politicalVec.map(v => v / m);
         }
     }
     return result;
