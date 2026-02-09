@@ -546,7 +546,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 											padding: '12px 16px',
 											border: 'none',
 											background: 'none',
-											color: 'var(--text-primary)',
+											color: 'var(--lightest)',
 											cursor: 'pointer',
 											fontSize: '14px',
 											textAlign: 'left'

@@ -5,7 +5,7 @@ import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import ExternalPostWidget from '../../socialConnect/externalPostWidget';
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaQuestionCircle, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import GetCroppedImg from '../../functions/getCroppedImg';
@@ -121,6 +121,8 @@ const reorder = (list, startIndex, endIndex) => {
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostDelete, onPostSubmit, parentPost = null, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false)
     const blocksRef = useRef([])
+    const [showHelpDropdown, setShowHelpDropdown] = useState(false)
+    const helpRef = useRef(null)
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
     const { channel_name, feed_name } = useParams()
@@ -838,6 +840,16 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
     }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isEdit, isReply, onPostSubmit, post, quotedPost, quotedExternalPost, title]);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (helpRef.current && !helpRef.current.contains(event.target)) {
+                setShowHelpDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
         if (block.data.align === 'center') newAlign = 'left' 
@@ -878,9 +890,29 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     <ExternalPostWidget post={quotedExternalPost} sharedPost={true} />
                 </div>
             )}
-            {!isReply && !isEdit && !post && (
-                <p className="large-text">Create post in: {feed_name} / {channel_name}</p>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div ref={helpRef} style={{ position: 'relative' }}>
+                    <button className="small-icon" type="button" onClick={() => setShowHelpDropdown(!showHelpDropdown)} title="Help">
+                        <FaQuestionCircle />
+                    </button>
+                    {showHelpDropdown && (
+                        <div className="dropdown-menu" style={{ color: 'var(--lighest)', position: 'absolute', zIndex: 101, left: 0, top: '100%', minWidth: '260px', padding: '12px' }}>
+                            <p className="small-text" style={{ fontWeight: 600, marginBottom: '8px' }}>How to use the editor</p>
+                            <ul style={{ margin: 0, paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <li className="small-text">Use the <b>Add</b> button to insert text, image, video, or custom blocks</li>
+                                <li className="small-text"><b>Drag and drop</b> blocks by the grip handle to reorder them</li>
+                                <li className="small-text">Switch to <b>direct input</b> mode on custom blocks to write code manually</li>
+                                <li className="small-text"><b>Crop</b> and <b>align</b> images using the controls above each media block</li>
+                                <li className="small-text"><b>Save as draft</b> to come back and finish later</li>
+                                <li className="small-text"><b>Custom blocks</b> are AI-generated HTML/CSS/JS from a text prompt</li>
+                            </ul>
+                        </div>
+                    )}
+                </div>
+                {!isReply && !isEdit && !post && (
+                    <p className="large-text">Create post in: {feed_name} / {channel_name}</p>
+                )}
+            </div>
             <form id="post-form" className="post-form" onSubmit={submitForm}>
                 <div className="post-header-buttons-sticky">
                     <div className="post-header-buttons">
