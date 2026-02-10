@@ -172,6 +172,9 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			} else {
 				//Success - update to match actual vote type returned
 				setUserVote(response.data.voteType);
+				if (response.data.score !== undefined && response.data.score !== null) {
+					setLocalScore(response.data.score);
+				}
 				if (!response.data.syncedToPlatform) {
 					setVoteError('Vote saved locally but not synced to platform');
 					setTimeout(() => setVoteError(''), 3000);

@@ -11,6 +11,7 @@ import { fetchAndProcessPosts } from '../functions/external_posts/fetchAndProces
 import { fetchAndStoreReplies } from '../functions/external_posts/fetchReplies.js';
 import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
 import { refreshBlueskyToken } from '../functions/external_posts/refreshBlueskyToken.js';
+import { refreshRedditToken } from '../functions/external_posts/token_refresh/refreshRedditToken.js';
 import { GenerateBlueskyHTML } from '../functions/external_posts/generate_html/generateBlueskyHTML.js';
 import { GenerateRedditHTML } from '../functions/external_posts/generate_html/generateRedditHTML.js';
 import { GenerateMastodonHTML } from '../functions/external_posts/generate_html/generateMastodonHTML.js';
@@ -168,7 +169,7 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
 		};
 		req.session.reddit_oauth_nonce = statePayload.nonce;
 		const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
-		const scope = ['identity','read','mysubreddits','history'].join(' ');
+		const scope = ['identity','read','vote','mysubreddits','history'].join(' ');
 		const url =
 			`${OAUTH_AUTHORIZE}?client_id=${encodeURIComponent(REDDIT_CLIENT_ID)}` +
 			`&response_type=code` +
@@ -796,39 +797,82 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 		let platformUri = null;
 		//Sync to platform APIs
 		try {
+			console.log('[vote_external_post] Syncing to platform:', { source: source.toLowerCase(), postId, sourcePostId, voteType, isRemoving });
 			if (source.toLowerCase() === 'reddit') {
-				//Reddit voting
+				//Reddit voting - id needs t3_ (post) or t1_ (comment) prefix
+				const redditFullname = sourcePostId.startsWith('t') ? sourcePostId
+					: (postId.includes(':') && await ExternalPosts.findOne({ where: { post_id: postId }, attributes: ['parent_id'] }).then(p => p?.parent_id) ? `t1_${sourcePostId}` : `t3_${sourcePostId}`);
 				let dir = 0; //0 = unvote
 				if (!isRemoving) {
 					dir = voteType === 'upvote' ? 1 : -1;
 				}
-				const voteResponse = await fetch('https://oauth.reddit.com/api/vote', {
-					method: 'POST',
-					headers: {
-						'Authorization': `bearer ${account.access_token}`,
-						'User-Agent': ua(),
-						'Content-Type': 'application/x-www-form-urlencoded'
-					},
-					body: new URLSearchParams({
-						id: sourcePostId,
-						dir: dir.toString()
-					})
-				});
+				console.log('[vote_external_post] Reddit vote:', { redditFullname, dir, hasToken: !!account.access_token });
+				const sendRedditVote = async (token) => {
+					return fetch('https://oauth.reddit.com/api/vote', {
+						method: 'POST',
+						headers: {
+							'Authorization': `bearer ${token}`,
+							'User-Agent': ua(),
+							'Content-Type': 'application/x-www-form-urlencoded'
+						},
+						body: new URLSearchParams({
+							id: redditFullname,
+							dir: dir.toString()
+						})
+					});
+				};
+				let voteResponse = await sendRedditVote(account.access_token);
+				console.log('[vote_external_post] Reddit vote response:', { status: voteResponse.status, ok: voteResponse.ok });
+				if (!voteResponse.ok) {
+					const responseBody = await voteResponse.text();
+					console.error('[vote_external_post] Reddit vote failed:', { status: voteResponse.status, body: responseBody });
+				}
+				//Retry with refreshed token if unauthorized
+				if (voteResponse.status === 401) {
+					console.log('[vote_external_post] Reddit token expired, refreshing...');
+					const newToken = await refreshRedditToken(userId);
+					console.log('[vote_external_post] Reddit token refresh:', { success: !!newToken });
+					if (newToken) {
+						voteResponse = await sendRedditVote(newToken);
+						console.log('[vote_external_post] Reddit retry response:', { status: voteResponse.status, ok: voteResponse.ok });
+						if (!voteResponse.ok) {
+							const retryBody = await voteResponse.text();
+							console.error('[vote_external_post] Reddit retry failed:', { status: voteResponse.status, body: retryBody });
+						}
+					}
+				}
 				if (voteResponse.ok) {
 					syncedToPlatform = true;
 				} else {
 					errorMessage = 'Failed to sync vote to Reddit';
 				}
 			} else if (source.toLowerCase() === 'bluesky') {
-				//Bluesky like/unlike
-				if (isRemoving) {
+				//Bluesky like/unlike - helper to get current token with refresh
+				console.log('[vote_external_post] Bluesky vote:', { hasToken: !!account.access_token, accountId: account.account_id, isRemoving });
+				const getBlueskyToken = async () => {
+					const testResponse = await fetch('https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=' + encodeURIComponent(account.account_id), {
+						headers: { 'Authorization': `Bearer ${account.access_token}` }
+					});
+					console.log('[vote_external_post] Bluesky token test:', { status: testResponse.status, ok: testResponse.ok });
+					if (testResponse.ok) return account.access_token;
+					console.log('[vote_external_post] Bluesky token expired, refreshing...');
+					const refreshResult = await refreshBlueskyToken(userId);
+					console.log('[vote_external_post] Bluesky token refresh:', { success: !!refreshResult, hasAccessToken: !!refreshResult?.accessToken });
+					return refreshResult?.accessToken || null;
+				};
+				const blueskyToken = await getBlueskyToken();
+				if (!blueskyToken) {
+					errorMessage = 'Bluesky token expired and refresh failed';
+					console.error('[vote_external_post] Bluesky: no valid token available');
+				} else if (isRemoving) {
 					//Unlike - need to find and delete the like record
+					console.log('[vote_external_post] Bluesky unlike:', { hasPlatformUri: !!existingVote?.platform_uri, platformUri: existingVote?.platform_uri });
 					if (existingVote?.platform_uri) {
 						const rkey = existingVote.platform_uri.split('/').pop();
 						const unlikeResponse = await fetch('https://bsky.social/xrpc/com.atproto.repo.deleteRecord', {
 							method: 'POST',
 							headers: {
-								'Authorization': `Bearer ${account.access_token}`,
+								'Authorization': `Bearer ${blueskyToken}`,
 								'Content-Type': 'application/json'
 							},
 							body: JSON.stringify({
@@ -839,6 +883,8 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 						});
 						syncedToPlatform = unlikeResponse.ok;
 						if (!unlikeResponse.ok) {
+							const unlikeBody = await unlikeResponse.text();
+							console.error('[vote_external_post] Bluesky unlike failed:', { status: unlikeResponse.status, body: unlikeBody, rkey });
 							errorMessage = 'Failed to sync unlike to Bluesky';
 						}
 					} else {
@@ -851,8 +897,10 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 						where: { post_id: postId },
 						attributes: ['cid', 'source_post_id']
 					});
+					console.log('[vote_external_post] Bluesky like:', { postId, hasCid: !!externalPost?.cid, cid: externalPost?.cid, sourcePostId: externalPost?.source_post_id });
 					if (!externalPost?.cid) {
 						errorMessage = 'Post CID not found - cannot sync like to Bluesky';
+						console.error('[vote_external_post] Bluesky: CID missing for post', postId);
 					} else {
 						const likePayload = {
 							repo: account.account_id,
@@ -865,10 +913,11 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 								createdAt: new Date().toISOString()
 							}
 						};
+						console.log('[vote_external_post] Bluesky like payload:', JSON.stringify(likePayload));
 						const likeResponse = await fetch('https://bsky.social/xrpc/com.atproto.repo.createRecord', {
 							method: 'POST',
 							headers: {
-								'Authorization': `Bearer ${account.access_token}`,
+								'Authorization': `Bearer ${blueskyToken}`,
 								'Content-Type': 'application/json'
 							},
 							body: JSON.stringify(likePayload)
@@ -876,9 +925,12 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 						if (likeResponse.ok) {
 							const likeData = await likeResponse.json();
 							syncedToPlatform = true;
+							console.log('[vote_external_post] Bluesky like success:', { uri: likeData.uri });
 							//Store the like URI for future unlike operations
 							platformUri = likeData.uri;
 						} else {
+							const likeBody = await likeResponse.text();
+							console.error('[vote_external_post] Bluesky like failed:', { status: likeResponse.status, body: likeBody, payload: likePayload });
 							errorMessage = 'Failed to sync like to Bluesky';
 						}
 					}
@@ -944,59 +996,62 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 				}
 			}
 		} catch (platformError) {
+			console.error('[vote_external_post] Platform sync exception:', { source, error: platformError.message, stack: platformError.stack });
 			errorMessage = `Failed to sync to ${source}`;
 		}
+		console.log('[vote_external_post] Sync result:', { syncedToPlatform, errorMessage, platformUri });
+		//Fetch updated score from platform if sync succeeded
+		let platformScore = null;
+		if (syncedToPlatform) {
+			try {
+				const platform = source.toLowerCase();
+				const currentToken = (await ConnectedAccounts.findOne({ where: { user_id: userId, platform }, attributes: ['access_token', 'instance_url'] }));
+				if (platform === 'reddit') {
+					const infoResponse = await fetch(`https://oauth.reddit.com/api/info?id=t3_${sourcePostId}`, {
+						headers: { 'Authorization': `bearer ${currentToken.access_token}`, 'User-Agent': ua() }
+					});
+					if (infoResponse.ok) {
+						const infoData = await infoResponse.json();
+						const postData = infoData?.data?.children?.[0]?.data;
+						if (postData) platformScore = postData.score;
+					}
+				} else if (platform === 'bluesky') {
+					const postResponse = await fetch(`https://bsky.social/xrpc/app.bsky.feed.getPosts?uris=${encodeURIComponent(sourcePostId)}`, {
+						headers: { 'Authorization': `Bearer ${currentToken.access_token}` }
+					});
+					if (postResponse.ok) {
+						const postData = await postResponse.json();
+						const bskyPost = postData?.posts?.[0];
+						if (bskyPost) platformScore = bskyPost.likeCount ?? null;
+					}
+				} else if (platform === 'mastodon') {
+					const statusResponse = await fetch(`${currentToken.instance_url}/api/v1/statuses/${sourcePostId}`, {
+						headers: { 'Authorization': `Bearer ${currentToken.access_token}` }
+					});
+					if (statusResponse.ok) {
+						const statusData = await statusResponse.json();
+						platformScore = statusData.favourites_count ?? null;
+					}
+				}
+				console.log('[vote_external_post] Fetched platform score:', { platform, platformScore });
+			} catch (scoreError) {
+				console.error('[vote_external_post] Error fetching platform score:', scoreError.message);
+			}
+		}
 		//Update database regardless of platform sync status
-		const isVoteSystem = source.toLowerCase() === 'reddit'; //Reddit uses upvote/downvote, others use likes
+		const isVoteSystem = source.toLowerCase() === 'reddit';
 		if (isRemoving) {
 			await ExternalPostVotes.destroy({
 				where: { post_id: postId, user_id: userId }
 			});
-			//Decrement score in external_posts
-			const externalPost = await ExternalPosts.findOne({ where: { post_id: postId } });
-			if (externalPost) {
-				let delta = -1;
-				if (isVoteSystem && existingVote?.vote_type === 'downvote') {
-					delta = 1; //Removing downvote increases score
-				}
-				await ExternalPosts.update(
-					{
-						score: sequelize.literal(`score + ${delta}`),
-						fetched_at: new Date() // Update timestamp to keep data fresh
-					},
-					{ where: { post_id: postId } }
-				);
-			}
 		} else {
 			if (existingVote) {
-				//Changing vote (e.g., upvote to downvote)
-				const oldVoteType = existingVote.vote_type;
 				existingVote.vote_type = voteType;
 				existingVote.synced_to_platform = syncedToPlatform;
-				if (platformUri) {
-					existingVote.platform_uri = platformUri;
-				}
+				if (platformUri) existingVote.platform_uri = platformUri;
 				await existingVote.save();
-				//Update score if vote type changed (only for Reddit)
-				if (oldVoteType !== voteType && isVoteSystem) {
-					let delta = 0;
-					if (oldVoteType === 'downvote' && voteType === 'upvote') {
-						delta = 2; //From -1 to +1
-					} else if (oldVoteType === 'upvote' && voteType === 'downvote') {
-						delta = -2; //From +1 to -1
-					}
-					if (delta !== 0) {
-						await ExternalPosts.update(
-							{
-								score: sequelize.literal(`score + ${delta}`),
-								fetched_at: new Date() // Update timestamp to keep data fresh
-							},
-							{ where: { post_id: postId } }
-						);
-					}
-				}
 			} else {
-				const newVote = {
+				await ExternalPostVotes.create({
 					vote_id: v4(),
 					post_id: postId,
 					user_id: userId,
@@ -1004,29 +1059,41 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 					vote_type: voteType,
 					synced_to_platform: syncedToPlatform,
 					platform_uri: platformUri
-				};
-				await ExternalPostVotes.create(newVote);
-				//Increment score in external_posts
-				const externalPost = await ExternalPosts.findOne({ where: { post_id: postId } });
-				if (externalPost) {
-					let delta = 1;
-					if (isVoteSystem && voteType === 'downvote') {
-						delta = -1;
-					}
-					await ExternalPosts.update(
-						{
-							score: sequelize.literal(`score + ${delta}`),
-							fetched_at: new Date() // Update timestamp to keep data fresh
-						},
-						{ where: { post_id: postId } }
-					);
-				}
+				});
 			}
 		}
+		//Update score - use platform score if available, otherwise use delta
+		if (platformScore !== null) {
+			await ExternalPosts.update(
+				{ score: platformScore, fetched_at: new Date() },
+				{ where: { post_id: postId } }
+			);
+		} else {
+			let delta = 0;
+			if (isRemoving) {
+				delta = isVoteSystem && existingVote?.vote_type === 'downvote' ? 1 : -1;
+			} else if (existingVote) {
+				const oldVoteType = existingVote.vote_type;
+				if (oldVoteType !== voteType && isVoteSystem) {
+					delta = oldVoteType === 'downvote' && voteType === 'upvote' ? 2 : -2;
+				}
+			} else {
+				delta = isVoteSystem && voteType === 'downvote' ? -1 : 1;
+			}
+			if (delta !== 0) {
+				await ExternalPosts.update(
+					{ score: sequelize.literal(`score + ${delta}`), fetched_at: new Date() },
+					{ where: { post_id: postId } }
+				);
+			}
+		}
+		//Get final score to return to frontend
+		const updatedPost = await ExternalPosts.findOne({ where: { post_id: postId }, attributes: ['score'] });
 		const responseData = {
 			success: true,
 			voteType: isRemoving ? null : voteType,
 			syncedToPlatform,
+			score: updatedPost?.score ?? null,
 			message: errorMessage || 'Vote recorded successfully'
 		};
 		res.status(200).json(responseData);
