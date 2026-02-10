@@ -89,6 +89,6 @@ export function mapMastodonToExternal(toot, instance) {
 		video_count: Array.isArray(media) ? media.filter(m => m && m.type === 'video').length : 0,
 		has_images: Array.isArray(media) && media.length > 0,
 		has_videos: false,
-		channel: postInstance
+		channel: instance
 	};
 } 
