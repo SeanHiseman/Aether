@@ -110,10 +110,21 @@ export default function SocialFeedPage({ platform }) {
 		setModalOpen(true);
 	};
 
-	// Load single post if post_id is in the URL
+	// Load single post or reload feed when post_id changes
 	useEffect(() => {
 		if (post_id) {
 			loadSinglePost();
+		} else {
+			//Navigated back from single post to feed - reset and reload
+			hasLoadedRef.current = false;
+			isFetchingRef.current = false;
+			setOffset(0);
+			setHasMore(true);
+			setPosts([]);
+			setLoading(true);
+			if (isAuthenticated && !justConnected) {
+				loadFeed();
+			}
 		}
 	}, [post_id]);
 

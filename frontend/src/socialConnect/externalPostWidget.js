@@ -28,7 +28,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [replies, setReplies] = useState([]);
-	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
+	const [showReplies, setShowReplies] = useState(false);
 	const [hasMoreReplies, setHasMoreReplies] = useState(false);
 	const [loadingReplies, setLoadingReplies] = useState(false);
 	const [userVote, setUserVote] = useState(() => {
@@ -281,12 +281,12 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 				cursor: (!sharedPost && !isQuoted && !post_id) ? 'pointer' : 'default'
 			}}
 		>
-			{post?.title && <a href={post?.url} target="_blank" rel="noopener noreferrer" className="title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+			{post?.title && <div className="title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
 				</span>
 				{post?.recommendationReasons && <RecommendationInfo reasons={post.recommendationReasons} />}
-			</a>}
+			</div>}
 			{!post?.title && post?.recommendationReasons && (
 				<div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
 					<RecommendationInfo reasons={post.recommendationReasons} />
