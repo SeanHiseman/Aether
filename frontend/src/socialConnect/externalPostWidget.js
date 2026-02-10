@@ -243,6 +243,8 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			e.target.closest('a') ||
 			e.target.closest('.large-icon') ||
 			e.target.closest('.small-icon') ||
+			e.target.closest('.recommendation-info') ||
+			e.target.closest('.recommendation-backdrop') ||
 			sharedPost ||
 			isQuoted ||
 			post_id //Already on single post page
