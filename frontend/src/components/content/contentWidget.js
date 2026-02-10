@@ -625,18 +625,20 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				<div className="view-date-container">
-					{!display && (
+				{!isDraft && (
+					<div className="views-container">
+						<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
+						</p>
+					</div>
+				)}
+				{!display && (
+					<div className="date-container">
 						<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
 							{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
 						</p>
-					)}
-					{!isDraft && (
-						<p className="small-text faded-text" style={{ margin: '0px', width: '12ch', textAlign: 'right' }}>
-							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
-						</p>
-					)}
-				</div>
+					</div>
+				)}
 			</div>
 			{!isReplyMode && showReplies && (
 				<div className="reply-section">
