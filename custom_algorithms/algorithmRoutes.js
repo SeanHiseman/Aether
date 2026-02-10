@@ -5,7 +5,7 @@ import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import { decrypt, encrypt } from '../functions/encryptionUtil.js';
 import fs from 'fs';
 import multer from 'multer';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import os from 'os';
 import path from 'path';
 import { Router } from 'express';
@@ -467,11 +467,12 @@ router.post('/transcribe_voice', authenticateCheck, upload.single('audio'), asyn
 		tempFilePath = path.join(tempDir, `${v4()}${fileExtension}`);
 		//Write buffer to temporary file
 		await fs.promises.writeFile(tempFilePath, req.file.buffer);
-		//Create a read stream for OpenAI
-		const audioStream = fs.createReadStream(tempFilePath);
+		//Convert to a File object compatible with older Node versions
+		const fileBuffer = await fs.promises.readFile(tempFilePath);
+		const audioFile = await toFile(fileBuffer, `audio${fileExtension}`);
 		//Transcribe using OpenAI Whisper
 		const transcription = await openai.audio.transcriptions.create({ //Autodetects language
-			file: audioStream,
+			file: audioFile,
 			model: 'whisper-1',
 			response_format: 'text'
 		});
