@@ -4,7 +4,6 @@ import cron from 'node-cron';
 import crypto from 'crypto';
 import { ConnectedAccounts, Users } from '../models/users.js';
 import dotenv from 'dotenv';
-import { ensureExternalAccountPosts } from '../functions/external_posts/ensureExternalAccountPosts.js';
 import { ExternalAccountMeta, ExternalFollows, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens } from '../models/relationships.js';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -643,6 +642,8 @@ router.get('/get_external_post/:post_id', async (req, res) => {
 router.get('/external_post_replies/:post_id', async (req, res) => {
 	try {
 		const post_id = req.params.post_id;
+		const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 100);
+		const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 		const viewerId = req.session?.viewer_id;
 		const userId = req.session?.user_id;
 		const parentPost = await ExternalPosts.findOne({
@@ -709,13 +710,16 @@ router.get('/external_post_replies/:post_id', async (req, res) => {
 			}
 			return true;
 		});
+		const totalReplies = replies.length;
+		//Paginate after filtering
+		const paginatedReplies = replies.slice(offset, offset + limit);
 		//Format each reply with vote information
 		const platform = parentPost.source.toLowerCase();
 		const config = FEED_CONFIG[platform];
 		const formattedReplies = await Promise.all(
-			replies.map(reply => formatExternalPost(reply, config, platform))
+			paginatedReplies.map(reply => formatExternalPost(reply, config, platform))
 		);
-		return res.status(200).json({ success: true, replies: formattedReplies });
+		return res.status(200).json({ success: true, replies: formattedReplies, total: totalReplies, hasMore: offset + limit < totalReplies });
 	} catch (error) {
 		console.error(new Date().toISOString(), '/external_post_replies error:', error);
 		return res.status(500).json({ success: false, message: 'Error fetching replies' });

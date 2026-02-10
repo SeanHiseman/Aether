@@ -29,6 +29,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [replies, setReplies] = useState([]);
 	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
+	const [hasMoreReplies, setHasMoreReplies] = useState(false);
 	const [loadingReplies, setLoadingReplies] = useState(false);
 	const [userVote, setUserVote] = useState(() => {
 		if (post?.has_upvoted) return post.source === 'Reddit' ? 'upvote' : 'like';
@@ -52,14 +53,17 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 		setShowExpandButton(overflowing);
 	}, []);
 
-	const fetchReplies = async () => {
-		if (!post?.post_id || replies.length > 0) return;
+	const fetchReplies = async (loadMore = false) => {
+		if (!post?.post_id) return;
+		if (!loadMore && replies.length > 0) return;
 		try {
 			setLoadingReplies(true);
 			const encodedPostId = encodeURIComponent(post.post_id);
-			const response = await api.get(`/external_post_replies/${encodedPostId}`);
+			const currentOffset = loadMore ? replies.length : 0;
+			const response = await api.get(`/external_post_replies/${encodedPostId}?limit=100&offset=${currentOffset}`);
 			if (response.data?.success && response.data?.replies) {
-				setReplies(response.data.replies);
+				setReplies(prev => loadMore ? [...prev, ...response.data.replies] : response.data.replies);
+				setHasMoreReplies(response.data.hasMore || false);
 			}
 		} catch (error) {
 			console.error('Error fetching replies:', error);
@@ -455,6 +459,11 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 								/>
 							))}
 							<div className="replies-footer">
+								{hasMoreReplies && (
+									<button className="small-icon" onClick={() => fetchReplies(true)} disabled={loadingReplies} title="Load more replies">
+										{loadingReplies ? <p className="small-text faded-text">Loading...</p> : <><FaChevronDown /><p className="icon-text">More replies</p></>}
+									</button>
+								)}
 								<button className="small-icon" onClick={toggleReplies} title="Close Replies">
 									<FaChevronUp />
 								</button>
