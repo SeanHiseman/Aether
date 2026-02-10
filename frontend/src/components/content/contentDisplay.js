@@ -4,13 +4,12 @@ import ContentWidget from './contentWidget'
 import ExternalPostWidget from '../../socialConnect/externalPostWidget'
 import { useEffect, useRef, useState } from 'react'
 
-const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
+const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
 	//console.log("post:", post);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
 	const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-	console.log("isMobile:", isMobile);
 	const [loading, setLoading] = useState(false);
 	const quotedPostData = post?.quotedPost || null;
 	const quotedExternalPostData = post?.quotedExternalPost || null;
@@ -132,7 +131,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const viewportHeight = window.innerHeight * (isMobile ? 0.60 : 0.7); //55vh for mobile users because of feed header
+			const viewportHeight = window.innerHeight * (isMobile ? (isAuthenticated ? 0.60 : 0.55) : 0.7); //60vh for mobile users because of feed header, 55vh because of footer
 			const threshold = 5;
 			//Check if content would overflow when collapsed
 			let isOverflowing = scrollHeight > viewportHeight + threshold;
@@ -169,7 +168,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				ref={contentRef}
 				className="display-container"
 				style={{
-					maxHeight: (showFullContent || isFullscreen) ? 'none' : (isMobile ? '60vh' : '70vh'),
+					maxHeight: (showFullContent || isFullscreen) ? 'none' : (isMobile ? (isAuthenticated ? '60vh' : '55vh') : '70vh'),
 					height: isFullscreen ? '100%' : 'auto',
 					overflow: showScrollBar ? 'auto' : 'hidden',
 					position: 'relative',
@@ -178,80 +177,76 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				}}
 			>
 				{blocks.map((block, i) => {
-					if (block.type === 'text') {
+					if (block?.type === 'text') {
 						return (
-							<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={redirect && !post?.is_external ? handleRedirect : null} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
+							<div dangerouslySetInnerHTML={{ __html: block?.html }} key={i} onClick={redirect && !post?.is_external ? handleRedirect : null} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
 						);
 					}
-					if (block.type === 'code') {
+					if (block?.type === 'code') {
 						return (
-							<div
-								key={i}
-								data-iframe-wrapper
-								style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : (isMobile ? '60vh' : '70vh') }}
-							>
+							<div key={i} data-iframe-wrapper style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : (isMobile ? (isAuthenticated ? '60vh' : '55vh') : '70vh') }}>
 								<iframe
 									sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}
-									srcDoc={block.code}
+									srcDoc={block?.code}
 									style={{ border: 'none', height: '100%', width: '100%', pointerEvents: 'auto' }}
-									title={`code-block-${block.id}`}
+									title={`code-block-${block?.id}`}
 								/>
 							</div>
 						)
 					}
-					if (block.type === 'link') {
+					if (block?.type === 'link') {
 						return (
 							<div key={i} className="link-preview-block">
-								<a href={block.href} target="_blank" rel="noopener noreferrer" className="link-preview-card">
-									{block.image && (
+								<a href={block?.href} target="_blank" rel="noopener noreferrer" className="link-preview-card">
+									{block?.image && (
 										<div className="link-preview-image">
-											<img src={block.image} alt={block.title || ''} />
+											<img src={block?.image} alt={block?.title || ''} />
 										</div>
 									)}
 									<div className="link-preview-content">
-										{block.title && (
+										{block?.title && (
 											<h4 className="link-preview-title">
-												{block.title}
+												{block?.title}
 											</h4>
 										)}
-										{block.description && (
+										{block?.description && (
 											<p className="link-preview-description">
-												{block.description}
+												{block?.description}
 											</p>
 										)}
 										<span className="link-preview-host">
-											{block.host}
+											{block?.host}
 										</span>
 									</div>
 								</a>
 							</div>
 						);
 					}
-					if (block.type === 'media') {
+					if (block?.type === 'media') {
 						const styleObj =
-							block.align === 'center'
-								? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' }
-								: { height: 'auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' };
-						if (block.isImage) return <img alt="Uploaded Media" key={i} src={block.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} />;
-						if (block.isVideo) {
+							block?.align === 'center'
+								? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: (isAuthenticated ? '60vh' : '55vh'), cursor: 'pointer' }
+								: { height: 'auto', maxWidth: '100%', maxHeight: (isAuthenticated ? (isAuthenticated ? '60vh' : '55vh') : '55vh'), cursor: 'pointer' };
+						if (block?.isImage) return <img alt="Uploaded Media" key={i} src={block?.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} />;
+						if (block?.isVideo) {
 							return (
 								<video controls key={i} style={styleObj}>
-									<source src={block.url} type={block.fileType || 'video/*'} />
+									<source src={block?.url} type={block?.fileType || 'video/*'} />
 								</video>
 							);
 						}
 						return <div key={i}>Unsupported</div>;
 					}
-					if (block.type === 'app') {
+					if (block?.type === 'app') {
 						return block.kind === 'webcontainer'
-							? <AppWebContainer key={block.id} buildId={block.buildId}/>
-							: <AppBlock key={block.id} appPath={block.appPath}/>
+							? <AppWebContainer key={block?.id} buildId={block?.buildId}/>
+							: <AppBlock key={block?.id} appPath={block?.appPath}/>
 					}
-					if (block.type === 'quoted') {
+					if (block?.type === 'quoted') {
 						return (
 							<div
 								key={i}
-								dangerouslySetInnerHTML={{ __html: block.html }}
+								dangerouslySetInnerHTML={{ __html: block?.html }}
 								style={{
 									borderLeft: '3px solid #1d9bf0',
 									paddingLeft: '12px',

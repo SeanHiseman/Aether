@@ -68,14 +68,14 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	//Sync local state with prop changes
 	useEffect(() => {
 		if (post) {
-			setUpvotes(post.upvotes);
-			setDownvotes(post.downvotes);
-			setHasUpvoted(post.has_upvoted || false);
-			setHasDownvoted(post.has_downvoted || false);
-			setIsSaved(post.is_saved);
-			setViews(post.views);
-			setHasReposted(post.has_reposted || false);
-			setRepostCount(post.repost_count || 0);
+			setUpvotes(post?.upvotes);
+			setDownvotes(post?.downvotes);
+			setHasUpvoted(post?.has_upvoted || false);
+			setHasDownvoted(post?.has_downvoted || false);
+			setIsSaved(post?.is_saved);
+			setViews(post?.views);
+			setHasReposted(post?.has_reposted || false);
+			setRepostCount(post?.repost_count || 0);
 		}
 	}, [post]);
 
@@ -374,7 +374,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<p className="feed-list-text">{reply?.poster?.feed_name}</p>
 					</Link>
 				</div>
-				<ContentDisplay content={reply?.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} />
+				<ContentDisplay isAuthenticated={isAuthenticated} content={reply?.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} />
 				<div className="tree-reply-footer">
 					<p className="small-text">{reply?.upvotes - reply?.downvotes} votes</p>
 					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`}>
@@ -442,6 +442,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					} : {}}>
 						<ContentDisplay
 							post={post}
+							isAuthenticated={isAuthenticated}
 							isFullscreen={isFullscreenMode}
 							onCodeAppChange={setHasCodeOrApp}
 							onOverflowChange={handleOverflowChange}
@@ -686,12 +687,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			)}
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
-		<LoginModal
-			isOpen={showLoginModal}
-			onClose={() => setShowLoginModal(false)}
-			message="Please log in to vote on posts."
-			title="Login Required"
-		/>
+		<LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="Please log in to vote on posts." title="Login Required" />
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
 		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); }} />}
 		{showShareModal && <SharePostModal post={post} isExternal={false} onClose={() => setShowShareModal(false)} />}
