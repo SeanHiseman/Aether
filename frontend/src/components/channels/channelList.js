@@ -35,7 +35,7 @@ const SortableFeedChannelItem = ({ channel, id, url }) => {
 				<div className={`channel-link ${isSelected ? 'selected' : ''}`}>
 					{channel?.channel_name}
 					{hasUnread && !isSelected && (
-						<span className="unread-indicator" style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
+						<span style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
 					)}
 				</div>
 			</Link>
@@ -214,7 +214,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 									<div className={`channel-link ${isSelected ? 'selected' : ''}`}>
 										{channel?.channel_name}
 										{hasUnread && !isSelected && (
-											<span className="unread-indicator" style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
+											<span style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
 										)}
 									</div>
 								</Link>

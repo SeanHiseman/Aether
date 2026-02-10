@@ -231,7 +231,7 @@
     border-radius: var(--medium-margin);
     display: flex;
     margin: var(--medium-margin);
-    min-height: clamp(4px, 4vw, 36px);
+    min-height: 36px;
     overflow: hidden;
 }
 .option-toggle button {

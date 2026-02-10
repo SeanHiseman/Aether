@@ -4,7 +4,7 @@ import ContentWidget from './contentWidget'
 import ExternalPostWidget from '../../socialConnect/externalPostWidget'
 import { useEffect, useRef, useState } from 'react'
 
-const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
+const ContentDisplay = ({ isAuthenticated = false, post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
 	//console.log("post:", post);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
@@ -131,7 +131,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const viewportHeight = window.innerHeight * 0.7; // 70vh (collapsed height)
+			const viewportHeight = window.innerHeight * (isAuthenticated ? 0.7 : 0.5);
 			const threshold = 5;
 			//Check if content would overflow when collapsed
 			let isOverflowing = scrollHeight > viewportHeight + threshold;
@@ -149,7 +149,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			ro.disconnect()
 			window.removeEventListener('resize', update)
 		}
-	}, [blocks, onHeightChange, onOverflowChange])
+	}, [blocks, isAuthenticated, onHeightChange, onOverflowChange])
 
 	//Detect if there is any code or app blocks to toggle fullscreen button
 	useEffect(() => {
@@ -168,7 +168,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				ref={contentRef}
 				className="display-container"
 				style={{
-					maxHeight: (showFullContent || isFullscreen) ? 'none' : '70vh',
+					maxHeight: (showFullContent || isFullscreen) ? 'none' : (isAuthenticated ? '70vh' : '50vh'),
 					height: isFullscreen ? '100%' : 'auto',
 					overflow: showScrollBar ? 'auto' : 'hidden',
 					position: 'relative',
@@ -187,7 +187,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							<div
 								key={i}
 								data-iframe-wrapper
-								style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '70vh' }}
+								style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : (isAuthenticated ? '70vh' : '50vh') }}
 							>
 								<iframe
 									sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}

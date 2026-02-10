@@ -440,12 +440,13 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						flexDirection: 'column',
 						overflow: 'hidden'
 					} : {}}>
-						<ContentDisplay 
-							post={post} 
+						<ContentDisplay
+							isAuthenticated={isAuthenticated}
+							post={post}
 							isFullscreen={isFullscreenMode}
-							onCodeAppChange={setHasCodeOrApp} 
-							onOverflowChange={handleOverflowChange} 
-							showFullContent={showFullContent || isFullscreenMode} 
+							onCodeAppChange={setHasCodeOrApp}
+							onOverflowChange={handleOverflowChange}
+							showFullContent={showFullContent || isFullscreenMode}
 							showScrollBar={!showExpandButton || showFullContent || isFullscreenMode}
 							onHeightChange={handleContentHeightChange}
 						/>

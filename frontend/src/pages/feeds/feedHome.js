@@ -8,6 +8,7 @@ import ContentForm from '../../components/content/contentForm';
 import { FaCog, FaEdit, FaFilter, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaReply, FaRetweet, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
+import { hasUnreadMessages } from '../../functions/channelViewTracking';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
@@ -65,6 +66,8 @@ const FeedHome = () => {
     const showDrafts = location.pathname.endsWith('/drafts');
     const isViewingSelf = viewer?.feed_name === feed_name;
     const urlPrefix = feed?.is_group ? 'g' : 'u';
+
+    const [channelViewTrigger, setChannelViewTrigger] = useState(0);
 
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
 
@@ -336,6 +339,13 @@ const FeedHome = () => {
         };
     }, [channel_name, channels, feed?.is_group]);
 
+    //Re-render when a channel is marked as read for instant unread dot updates
+    useEffect(() => {
+        const handleChannelViewed = () => setChannelViewTrigger(prev => prev + 1);
+        window.addEventListener('channelViewed', handleChannelViewed);
+        return () => window.removeEventListener('channelViewed', handleChannelViewed);
+    }, []);
+
     const AddChannel = async (event) => {
         if (!isAuthenticated) return;
         event.preventDefault();
@@ -385,6 +395,10 @@ const FeedHome = () => {
     };
     
     const channelRender = channels.find(c => c?.channel_name === channel_name);
+
+    // eslint-disable-next-line no-unused-vars
+    const currentChannelHasUnreadChat = channelViewTrigger >= 0 && channelRender?.is_chat
+        && hasUnreadMessages(channelRender?.channel_id, channelRender?.updated_at, true);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0 && channel_name !== 'Main') {
@@ -956,6 +970,9 @@ const FeedHome = () => {
                                 onClick={() => navigate(`/${urlPrefix}/${feed_name}/${channel_name}/chat`)}
                             >
                                 Chat
+                                {currentChannelHasUnreadChat && channelMode !== 'chat' && (
+                                    <span style={{ color: '#ff4444', fontWeight: 'bold', fontSize: '20px', marginLeft: '4px' }}>•</span>
+                                )}
                             </button>
                         </div>
                     )}
