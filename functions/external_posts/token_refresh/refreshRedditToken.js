@@ -8,7 +8,7 @@ export async function refreshRedditToken(user_id) {
 		if (!account?.refresh_token) {
 			return null;
 		}
-		const tokenResponse = await fetch(OAUTH_TOKEN, {
+		const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
 			method: 'POST',
 			headers: {
 				'Authorization': 'Basic ' + Buffer.from(process.env.REDDIT_CLIENT_ID + ':' + process.env.REDDIT_CLIENT_SECRET).toString('base64'),
