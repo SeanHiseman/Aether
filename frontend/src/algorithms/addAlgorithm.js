@@ -40,7 +40,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [showMembershipModal, setShowMembershipModal] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
-    const recordingIntervalRef = useRef(null);
     const isRecordingRef = useRef(false);
 
     const location = useLocation();
@@ -302,28 +301,13 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 }
             };
             mediaRecorder.onstop = async () => {
+                //Release microphone
+                stream.getTracks().forEach(track => track.stop());
                 const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+                audioChunksRef.current = [];
                 await sendAudioForTranscription(audioBlob);
-                //Restart recording if still in recording mode
-                if (isRecordingRef.current && mediaRecorderRef.current) {
-                    audioChunksRef.current = [];
-                    try {
-                        mediaRecorderRef.current.start();
-                    } catch (e) {
-                        console.error('Failed to restart recording:', e);
-                    }
-                } else {
-                    //Stop all tracks to release microphone
-                    stream.getTracks().forEach(track => track.stop());
-                }
             };
             mediaRecorder.start();
-            //Auto-send audio every 3 seconds for near real-time transcription
-            recordingIntervalRef.current = setInterval(() => {
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording' && isRecordingRef.current) {
-                    mediaRecorderRef.current.stop();
-                }
-            }, 3000);
         } catch (error) {
             stream.getTracks().forEach(track => track.stop());
             setError('Failed to start recording');
@@ -336,10 +320,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const stopVoiceRecording = () => {
         isRecordingRef.current = false;
         setIsRecording(false);
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-            recordingIntervalRef.current = null;
-        }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
         }
@@ -357,10 +337,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 },
             });
             if (response.data.success && response.data.transcription) {
-                //Replace the entire text with new transcription
                 const newText = response.data.transcription.trim();
                 if (newText) {
-                    setCustomInstruction(newText);
+                    //Append to existing text
+                    setCustomInstruction(prev => prev ? prev + ' ' + newText : newText);
                     setTemplate('none');
                 }
             }
@@ -375,9 +355,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     //Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (recordingIntervalRef.current) {
-                clearInterval(recordingIntervalRef.current);
-            }
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
                 mediaRecorderRef.current.stop();
             }
@@ -515,9 +492,13 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                     />
                     <button
                         className={`voice-input-button ${isRecording ? 'recording' : ''}`}
-                        onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                        onMouseDown={!isRecording && !isTranscribing ? startVoiceRecording : undefined}
+                        onMouseUp={isRecording ? stopVoiceRecording : undefined}
+                        onMouseLeave={isRecording ? stopVoiceRecording : undefined}
+                        onTouchStart={!isRecording && !isTranscribing ? (e) => { e.preventDefault(); startVoiceRecording(); } : undefined}
+                        onTouchEnd={isRecording ? (e) => { e.preventDefault(); stopVoiceRecording(); } : undefined}
                         type="button"
-                        title={isRecording ? 'Stop recording' : (isAuthenticated ? (hasMembership ? 'Start voice input' : 'Premium feature') : 'Login required')}
+                        title={isRecording ? 'Release to stop' : (isAuthenticated ? (hasMembership ? 'Hold to record' : 'Premium feature') : 'Login required')}
                         disabled={isTranscribing}
                     >
                         {isRecording ? <FaStop /> : <FaMicrophone />}

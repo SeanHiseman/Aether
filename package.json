@@ -1,7 +1,7 @@
 {
-  "name": "aether",
+  "name": "aether-social",
   "version": "1.0.0",
-  "description": "Better social media",
+  "description": "Take control of your social media",
   "main": "app.js",
   "type": "module",
   "scripts": {
