@@ -47,16 +47,24 @@ export function mapMastodonToExternal(toot, instance) {
 		} : null,
 		quotedPost: quotedPost
 	};
-	const postInstance = toot.url ? new URL(toot.url).origin : instance;
-	// Ensure we're using the Mastodon post URL, not the card URL
+	//Use the Mastodon post URL, not the card/article URL
 	let postUrl = toot.url || null;
+	//For article-type posts (e.g. from ActivityPub blogs), toot.url may be the article URL instead of the Mastodon post URL. Detect by comparing origins with the account.
+	if (postUrl && toot.account?.url) {
+		try {
+			const postOrigin = new URL(postUrl).origin;
+			const accountOrigin = new URL(toot.account.url).origin;
+			if (postOrigin !== accountOrigin && instance) {
+				//URL is on a different domain than the author - use local instance URL
+				postUrl = `${instance.replace(/\/$/, '')}/@${toot.account.acct}/${toot.id}`;
+			}
+		} catch (e) {
+			//Keep original URL on parse error
+		}
+	}
 	// If URL is missing but we have instance and ID, construct it
 	if (!postUrl && instance && toot.id && toot.account?.acct) {
-		// Extract instance from account if format is user@instance
-		const accountInstance = toot.account.acct.includes('@')
-			? toot.account.acct.split('@')[1]
-			: instance.replace(/^https?:\/\//, '');
-		postUrl = `https://${accountInstance}/@${toot.account.acct.split('@')[0]}/${toot.id}`;
+		postUrl = `${instance.replace(/\/$/, '')}/@${toot.account.acct}/${toot.id}`;
 	}
 	return {
 		post_id: `mastodon:${toot.id}`,
