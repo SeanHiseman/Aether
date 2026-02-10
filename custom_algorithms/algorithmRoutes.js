@@ -293,47 +293,50 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
             } else {
                 algorithmCode = JSON.stringify(algorithmJson);
             }
-            //Generate embeddings if words changed
+            //Generate embeddings if words changed (single embedding per word list)
             const finalBoostChanged = !sameWords(finalBoost, prevBoost);
             const finalSuppressChanged = !sameWords(finalSuppress, prevSuppress);
-            let boostEmbedding = null;
-            let suppressEmbedding = null;
             console.time('embedding_generation');
-            if (finalBoost.length > 0 && finalBoostChanged) {
-                console.log(`create_algorithm: generating ${finalBoost.length} boost embeddings`);
-                boostEmbedding = await generateEmbeddingsBatched(finalBoost, 3);
-            } else if (existingAlgorithm && !finalBoostChanged) {
-                boostEmbedding = existingAlgorithm.boost_embedding;
-            }
-            if (finalSuppress.length > 0 && finalSuppressChanged) {
-                console.log(`create_algorithm: generating ${finalSuppress.length} suppress embeddings`);
-                suppressEmbedding = await generateEmbeddingsBatched(finalSuppress, 3);
-            } else if (existingAlgorithm && !finalSuppressChanged) {
-                suppressEmbedding = existingAlgorithm.suppress_embedding;
-            }
-            console.timeEnd('embedding_generation');
-            //Political opinion encryption and embedding
+            //Political opinion
             const trimmedOpinion = politicalOpinion?.trim() || '';
             const encryptedOpinion = trimmedOpinion ? encrypt(trimmedOpinion) : null;
-            let politicalOpinionEmbedding = null;
+            let needsPoliticalEmbedding = false;
+            let politicalEmbeddingText = null;
             if (trimmedOpinion) {
                 const existingDecrypted = existingAlgorithm?.political_opinion_encrypted
                     ? decrypt(existingAlgorithm.political_opinion_encrypted)
                     : '';
                 if (existingDecrypted !== trimmedOpinion) {
-                    politicalOpinionEmbedding = await embeddingLimiter.schedule(() => analyser.generateEmbedding(trimmedOpinion));
-                } else {
-                    politicalOpinionEmbedding = existingAlgorithm.political_opinion_embedding;
+                    needsPoliticalEmbedding = true;
+                    politicalEmbeddingText = trimmedOpinion;
                 }
             } else if (politicalPosition != null) {
-                const positionText = politicalPositionToText(politicalPosition);
                 const prevPosition = prevParsedCode?.politicalPosition;
                 if (prevPosition !== politicalPosition || !existingAlgorithm?.political_opinion_embedding) {
-                    politicalOpinionEmbedding = await embeddingLimiter.schedule(() => analyser.generateEmbedding(positionText));
-                } else {
-                    politicalOpinionEmbedding = existingAlgorithm.political_opinion_embedding;
+                    needsPoliticalEmbedding = true;
+                    politicalEmbeddingText = politicalPositionToText(politicalPosition);
                 }
             }
+            //Generate embeddings sequentially per list, but run lists in parallel
+            const generateWordEmbeddings = async (words) => {
+                const results = [];
+                for (const word of words) {
+                    results.push(await analyser.generateEmbedding(word));
+                }
+                return results;
+            };
+            const [boostEmbedding, suppressEmbedding, politicalOpinionEmbedding] = await Promise.all([
+                finalBoost.length > 0 && finalBoostChanged
+                    ? generateWordEmbeddings(finalBoost)
+                    : Promise.resolve(existingAlgorithm && !finalBoostChanged ? existingAlgorithm.boost_embedding : null),
+                finalSuppress.length > 0 && finalSuppressChanged
+                    ? generateWordEmbeddings(finalSuppress)
+                    : Promise.resolve(existingAlgorithm && !finalSuppressChanged ? existingAlgorithm.suppress_embedding : null),
+                needsPoliticalEmbedding
+                    ? analyser.generateEmbedding(politicalEmbeddingText)
+                    : Promise.resolve(existingAlgorithm?.political_opinion_embedding || null)
+            ]);
+            console.timeEnd('embedding_generation');
             transaction = await sequelize.transaction();
             let algorithm;
             if (existingAlgorithm) {
