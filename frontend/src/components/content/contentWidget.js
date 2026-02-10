@@ -441,7 +441,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						overflow: 'hidden'
 					} : {}}>
 						<ContentDisplay
-							isAuthenticated={isAuthenticated}
 							post={post}
 							isFullscreen={isFullscreenMode}
 							onCodeAppChange={setHasCodeOrApp}
