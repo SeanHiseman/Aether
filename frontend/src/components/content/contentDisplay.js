@@ -10,6 +10,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 	const content = post?.content;
 	const contentRef = useRef(null);
 	const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+	console.log("isMobile:", isMobile);
 	const [loading, setLoading] = useState(false);
 	const quotedPostData = post?.quotedPost || null;
 	const quotedExternalPostData = post?.quotedExternalPost || null;
@@ -131,7 +132,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const viewportHeight = window.innerHeight * (isMobile ? 0.7 : 0.6); //60vh for mobile users because of header
+			const viewportHeight = window.innerHeight * (isMobile ? 0.60 : 0.7); //55vh for mobile users because of feed header
 			const threshold = 5;
 			//Check if content would overflow when collapsed
 			let isOverflowing = scrollHeight > viewportHeight + threshold;
@@ -168,7 +169,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				ref={contentRef}
 				className="display-container"
 				style={{
-					maxHeight: (showFullContent || isFullscreen) ? 'none' : (isMobile ? '70vh' : '60vh'),
+					maxHeight: (showFullContent || isFullscreen) ? 'none' : (isMobile ? '60vh' : '70vh'),
 					height: isFullscreen ? '100%' : 'auto',
 					overflow: showScrollBar ? 'auto' : 'hidden',
 					position: 'relative',
@@ -187,7 +188,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							<div
 								key={i}
 								data-iframe-wrapper
-								style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : (isMobile ? '70vh' : '60vh') }}
+								style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : (isMobile ? '60vh' : '70vh') }}
 							>
 								<iframe
 									sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}
