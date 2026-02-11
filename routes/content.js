@@ -783,8 +783,10 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 			await DeleteBuilds(foundPost.content, { transaction });
 			if (post.parent_id) {
 				const parentPost = await Posts.findByPk(post.parent_id);
-				parentPost.replies -= 1;
-				await parentPost.save();
+				if (parentPost) {
+					parentPost.replies -= 1;
+					await parentPost.save();
+				}
 			}
 			await PostVotes.destroy({ where: { post_id: post.post_id }, transaction });
 			await PostNotes.destroy({ where: { post_id: post.post_id }, transaction });
