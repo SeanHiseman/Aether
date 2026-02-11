@@ -9,7 +9,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import { fetchAndProcessPosts } from '../functions/external_posts/fetchAndProcessPosts.js';
 import { fetchAndStoreReplies } from '../functions/external_posts/fetchReplies.js';
-import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
+import { attachQuotedExternalPosts, formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
 import { refreshBlueskyToken } from '../functions/external_posts/refreshBlueskyToken.js';
 import { refreshRedditToken } from '../functions/external_posts/token_refresh/refreshRedditToken.js';
 import { GenerateBlueskyHTML } from '../functions/external_posts/generate_html/generateBlueskyHTML.js';
@@ -614,8 +614,9 @@ router.get('/get_external_post/:post_id', async (req, res) => {
 		// Express automatically decodes URL parameters
 		const post_id = req.params.post_id;
 		const viewerId = req.session?.viewer_id;
-		const post = await ExternalPosts.findOne({
-			where: { post_id }
+		let post = await ExternalPosts.findOne({
+			where: { post_id },
+			raw: true
 		});
 		if (!post) {
 			return res.status(404).json({ success: false, message: 'Post not found' });
@@ -629,10 +630,12 @@ router.get('/get_external_post/:post_id', async (req, res) => {
 			});
 			return res.status(404).json({ success: false, message: 'Post content unavailable' });
 		}
+		//Attach quoted external post if present
+		[post] = await attachQuotedExternalPosts([post]);
 		//Format the post with vote information if viewer is authenticated
 		const platform = post.source.toLowerCase();
 		const config = FEED_CONFIG[platform];
-		const formattedPost = await formatExternalPost(post, config, platform);
+		const formattedPost = formatExternalPost(post, config, platform);
 		return res.status(200).json({ success: true, post: formattedPost });
 	} catch (error) {
 		console.error(new Date().toISOString(), '/get_external_post error:', error);
@@ -713,7 +716,9 @@ router.get('/external_post_replies/:post_id', async (req, res) => {
 		});
 		const totalReplies = replies.length;
 		//Paginate after filtering
-		const paginatedReplies = replies.slice(offset, offset + limit);
+		let paginatedReplies = replies.slice(offset, offset + limit);
+		//Attach quoted external posts
+		paginatedReplies = await attachQuotedExternalPosts(paginatedReplies);
 		//Format each reply with vote information
 		const platform = parentPost.source.toLowerCase();
 		const config = FEED_CONFIG[platform];

@@ -62,8 +62,17 @@ async function attachParentAndQuotedData(posts, includeOptions, viewerId, voteMa
 			is_saved: relatedSavedSet.has(rawQuoted.post_id),
 			has_reposted: relatedRepostSet.has(rawQuoted.post_id)
 		} : undefined;
-		const rawQEP = p.quotedExternalPost?.dataValues || p.quotedExternalPost;
-		const quotedExternalPost = rawQEP ? formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source) : undefined;
+		//External posts already have quotedExternalPost formatted by formatExternalPost;
+		//native posts have it as raw Sequelize data that needs formatting
+		let quotedExternalPost = undefined;
+		if (isExternal) {
+			quotedExternalPost = p.quotedExternalPost || undefined;
+		} else {
+			const rawQEP = p.quotedExternalPost?.dataValues || p.quotedExternalPost;
+			if (rawQEP) {
+				quotedExternalPost = formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source);
+			}
+		}
 		return {
 			...(p.dataValues || p),
 			...votes,

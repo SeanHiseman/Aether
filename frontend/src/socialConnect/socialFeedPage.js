@@ -264,7 +264,7 @@ export default function SocialFeedPage({ platform }) {
 				)}
 			</div>
 			<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
-				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
+				<p className="large-text bold" style={{ cursor: post_id ? 'pointer' : 'default' }} onClick={() => { if (post_id) navigate(`/feed/${platform}`); }}>{capitalise(platform) || "Site not found"}</p>
 				<p className="small-text faded-text">{errorMessage}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
 				{isAuthenticated && <p className="tiny-text faded-text">Click to disconnect</p>}

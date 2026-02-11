@@ -1,6 +1,6 @@
 import { ExternalPosts } from "../../models/content.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js"
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js"
 import { Op } from "sequelize";
 import { Posts } from "../../models/relationships.js";
 
@@ -19,10 +19,11 @@ export async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOp
 	}
 	let finalExternalPosts = [];
 	if (externalIdsToFetch.length) {
-		const rawExternal = await ExternalPosts.findAll({
+		let rawExternal = await ExternalPosts.findAll({
 			where: { post_id: { [Op.in]: externalIdsToFetch }, content: { [Op.ne]: null } },
 			raw: true
 		});
+		rawExternal = await attachQuotedExternalPosts(rawExternal);
 		finalExternalPosts = rawExternal.map(p => {
 			const platformConfig = FEED_CONFIG[p.source];
 			return formatExternalPost(p, platformConfig, p.source);

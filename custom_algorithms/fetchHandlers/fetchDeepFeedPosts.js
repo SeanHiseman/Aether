@@ -2,7 +2,7 @@ import { DeepFeedContent, Feeds, Posts } from "../../models/relationships.js";
 import { ExternalPosts } from "../../models/content.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
 import { IntermixArrays } from "../../functions/intermixArrays.js";
 import { Op } from 'sequelize';
 import { scoreAndPaginateCandidates } from "../algorithmFunctions/scoreAndPaginateCandidates.js";
@@ -114,7 +114,7 @@ export async function fetchDeepFeedPosts({ locationId, viewerId, hasActiveAlgori
 		//Fetch external posts from Bluesky accounts
 		let externalPosts = [];
 		if (hasExternalAccounts) {
-			const rawExternal = await ExternalPosts.findAll({
+			let rawExternal = await ExternalPosts.findAll({
 				where: {
 					source: 'bluesky',
 					author_did: { [Op.in]: externalDids },
@@ -126,6 +126,7 @@ export async function fetchDeepFeedPosts({ locationId, viewerId, hasActiveAlgori
 				offset: halfOffset,
 				raw: true
 			});
+			rawExternal = await attachQuotedExternalPosts(rawExternal);
 			externalPosts = rawExternal.map(p => formatExternalPost(p, FEED_CONFIG.bluesky, 'bluesky'));
 		}
 		const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));

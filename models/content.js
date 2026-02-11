@@ -39,7 +39,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	url: { type: TEXT, allowNull: true },
 	media: { type: DataTypes.JSON, allowNull: true },
 	cid: { type: STRING(128), allowNull: true },
-	repost_count: { type: INTEGER, defaultValue: 0 }
+	repost_count: { type: INTEGER, defaultValue: 0 },
+	quoted_external_post_id: { type: STRING(255), allowNull: true }
 }, {
 	tableName: 'external_posts',
     timestamps: false,
@@ -53,6 +54,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
         { name: 'idx_ext_posts_word_count', fields: ['word_count'] },
         { name: 'idx_ext_posts_author_did', fields: ['author_did'] },
         { name: 'idx_fulltext_external_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
+        { fields: ['quoted_external_post_id'] }
     ]
 });
 

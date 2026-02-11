@@ -1,7 +1,7 @@
 import { ExternalPosts } from "../../models/content.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
 import { Feeds, Posts, Reposts } from "../../models/relationships.js";
 import { Op } from 'sequelize';
 import { processAccount } from "../../functions/external_posts/processAccount.js";
@@ -154,6 +154,7 @@ export async function fetchFollowingPosts({ followedFeedIdsSafe, viewerId, userI
 				where: { post_id: unifiedIds, content: { [Op.ne]: null } },
 				raw: true
 			});
+			externalPosts = await attachQuotedExternalPosts(externalPosts);
 		}
 		const formattedExternal = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[p.source], p.source));
 		const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
@@ -204,10 +205,11 @@ export async function fetchFollowingPosts({ followedFeedIdsSafe, viewerId, userI
 				//Fetch external posts for external reposts
 				let externalRepostPosts = [];
 				if (externalRepostIds.length > 0) {
-					const rawExternal = await ExternalPosts.findAll({
+					let rawExternal = await ExternalPosts.findAll({
 						where: { post_id: { [Op.in]: externalRepostIds }, content: { [Op.ne]: null } },
 						raw: true
 					});
+					rawExternal = await attachQuotedExternalPosts(rawExternal);
 					externalRepostPosts = rawExternal.map(p => {
 						const platformConfig = FEED_CONFIG[p.source];
 						const repostData = reposts.find(r => r.post_id === p.post_id);

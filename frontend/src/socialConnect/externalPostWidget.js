@@ -249,7 +249,6 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			e.target.closest('.recommendation-info') ||
 			e.target.closest('.recommendation-backdrop') ||
 			sharedPost ||
-			isQuoted ||
 			post_id //Already on single post page
 		) {
 			return;
@@ -281,7 +280,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			style={{
 				...(isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}),
 				...(showAsParent ? { borderBottomRightRadius: 0 } : {}),
-				cursor: (!sharedPost && !isQuoted && !post_id) ? 'pointer' : 'default'
+				cursor: (!sharedPost && !post_id) ? 'pointer' : 'default'
 			}}
 		>
 			{post?.title && <div className="title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
@@ -322,6 +321,14 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 					</div>
 				</div>
 			</div>
+			{post?.quotedExternalPost && !isQuoted && (
+				<div style={{ marginLeft: '20px', marginTop: '12px', marginBottom: '12px' }} onClick={(e) => e.stopPropagation()}>
+					<ExternalPostWidget
+						post={post.quotedExternalPost}
+						isQuoted={true}
+					/>
+				</div>
+			)}
 			<div className="content-metadata">
 				<div className="feed-info">
 					<a className="feed-link" target="_blank" rel="noopener noreferrer" href={post?.poster?.profile_url}>

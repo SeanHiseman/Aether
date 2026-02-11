@@ -1,6 +1,8 @@
 import { computeHotness } from "../postRanking.js";
 import { ContentAnalyser } from "../contentAnalyser.js";
 import { ExternalPosts, ExternalPostsAccess, PaginationTokens } from "../../models/content.js";
+import { GenerateBlueskyHTML } from "./generate_html/generateBlueskyHTML.js";
+import { GenerateMastodonHTML } from "./generate_html/generateMastodonHTML.js";
 import { getEmbedder } from "../contentAnalyser.js";
 import { refreshBlueskyToken } from "./token_refresh/refreshBlueskyToken.js";
 import { refreshRedditToken } from "./token_refresh/refreshRedditToken.js";
@@ -124,6 +126,76 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			default:
 				return [];
 		}
+		//Extract quoted posts from media.quotedPost and create separate entries
+		const quotedPostsToStore = [];
+		for (const mapped of mappedPosts) {
+			const qp = mapped.media?.quotedPost;
+			if (!qp) continue;
+			let quotedPostId, quotedHtml, quotedMedia, quotedTextBody, quotedAuthor, quotedAuthorPhoto, quotedUrl, quotedSourcePostId, quotedCreatedAt, quotedChannel;
+			if (platform === 'bluesky' && qp.uri) {
+				quotedPostId = `bluesky:${qp.uri}`;
+				quotedSourcePostId = qp.uri;
+				quotedTextBody = qp.text || '';
+				quotedAuthor = qp.author?.handle || null;
+				quotedAuthorPhoto = qp.author?.avatar || null;
+				quotedUrl = `https://bsky.app/profile/${qp.author?.handle}/post/${qp.uri.split('/').pop()}`;
+				quotedCreatedAt = qp.createdAt ? new Date(qp.createdAt) : new Date();
+				quotedChannel = qp.author?.handle || null;
+				quotedMedia = { images: qp.images || [], videos: qp.videos || [], card: qp.card || null };
+				quotedHtml = await GenerateBlueskyHTML(quotedTextBody, quotedMedia);
+			} else if (platform === 'mastodon' && qp.id) {
+				quotedPostId = `mastodon:${qp.id}`;
+				quotedSourcePostId = qp.id;
+				quotedTextBody = qp.text || '';
+				quotedAuthor = qp.author?.handle || null;
+				quotedAuthorPhoto = qp.author?.avatar || null;
+				quotedUrl = qp.url || null;
+				quotedCreatedAt = qp.createdAt ? new Date(qp.createdAt) : new Date();
+				quotedChannel = mapped.channel || null;
+				quotedMedia = { attachments: qp.attachments || [], card: qp.card || null };
+				quotedHtml = await GenerateMastodonHTML(qp.content || '', quotedMedia);
+			} else {
+				continue;
+			}
+			if (!quotedHtml || quotedHtml.trim() === '') continue;
+			quotedPostsToStore.push({
+				post_id: quotedPostId,
+				source: platform,
+				source_post_id: quotedSourcePostId,
+				title: null,
+				content: quotedHtml,
+				text_body: quotedTextBody,
+				text_length: quotedTextBody.length,
+				word_count: quotedTextBody ? quotedTextBody.split(/\s+/).length : 0,
+				image_count: (quotedMedia.images || quotedMedia.attachments || []).length,
+				video_count: (quotedMedia.videos || []).length,
+				has_text: quotedTextBody.length > 0,
+				has_images: (quotedMedia.images || quotedMedia.attachments || []).length > 0,
+				has_videos: (quotedMedia.videos || []).length > 0,
+				score: 0,
+				replies: 0,
+				sentiment_score: 0,
+				fetched_at: new Date(),
+				created_at_remote: quotedCreatedAt,
+				expired: false,
+				channel: quotedChannel,
+				author: quotedAuthor,
+				author_did: platform === 'bluesky' ? (qp.author?.did || null) : null,
+				author_photo: quotedAuthorPhoto,
+				url: quotedUrl,
+				media: quotedMedia,
+				cid: platform === 'bluesky' ? (qp.cid || null) : null
+			});
+			//Set the reference on the parent
+			mapped.quoted_external_post_id = quotedPostId;
+		}
+		//Store quoted posts (upsert to avoid duplicates)
+		if (quotedPostsToStore.length > 0) {
+			await ExternalPosts.bulkCreate(quotedPostsToStore, {
+				updateOnDuplicate: ['content', 'text_body', 'author', 'author_photo', 'url', 'media', 'fetched_at'],
+				logging: false
+			});
+		}
 		if (mappedPosts.length === 0) {
 			//Persist token if provided, to avoid re-fetching same page
 			if (nextToken) {
@@ -202,7 +274,8 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					author_photo: mapped.author_photo || null,
 					url: mapped.url,
 					media: mapped.media,
-					cid: mapped.cid || null
+					cid: mapped.cid || null,
+					quoted_external_post_id: mapped.quoted_external_post_id || null
 				};
 			}));
 			//Filter out posts with failed HTML generation
@@ -212,7 +285,7 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
 				'score', 'replies', 'sentiment_score', 'embeddings',
 				'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
-				'author_photo', 'url', 'media', 'cid'
+				'author_photo', 'url', 'media', 'cid', 'quoted_external_post_id'
 			];
 			//Prevent excessively large db uploads
 			const batchSize = 20;
@@ -227,6 +300,14 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					logging: false
 				});
 			}
+		}
+		//Update quoted_external_post_id for existing posts that now have a quoted post reference
+		const existingWithQuotes = mappedPosts.filter(p => p.quoted_external_post_id && existingGlobalIds.has(p.post_id));
+		for (const p of existingWithQuotes) {
+			await ExternalPosts.update(
+				{ quoted_external_post_id: p.quoted_external_post_id },
+				{ where: { post_id: p.post_id } }
+			);
 		}
 		//Grant per-user access for posts the user hasn't seen yet
 		if (postsToGrantAccess.length > 0) {

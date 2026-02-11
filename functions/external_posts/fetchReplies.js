@@ -157,6 +157,49 @@ export async function fetchAndStoreReplies({ post, accessToken, instanceUrl }) {
 	for (let i = 0; i < replies.length; i++) {
 		const reply = replies[i];
 		try {
+			//Extract and store quoted post if present
+			const qp = reply.media?.quotedPost;
+			if (qp) {
+				let quotedPostId, quotedHtml, quotedMedia, quotedTextBody;
+				if (platform === 'bluesky' && qp.uri) {
+					quotedPostId = `bluesky:${qp.uri}`;
+					quotedTextBody = qp.text || '';
+					quotedMedia = { images: qp.images || [], videos: qp.videos || [], card: qp.card || null };
+					quotedHtml = await GenerateBlueskyHTML(quotedTextBody, quotedMedia);
+				} else if (platform === 'mastodon' && qp.id) {
+					quotedPostId = `mastodon:${qp.id}`;
+					quotedTextBody = qp.text || '';
+					quotedMedia = { attachments: qp.attachments || [], card: qp.card || null };
+					quotedHtml = await GenerateMastodonHTML(qp.content || '', quotedMedia);
+				}
+				if (quotedPostId && quotedHtml && quotedHtml.trim() !== '') {
+					await ExternalPosts.upsert({
+						post_id: quotedPostId,
+						source: platform,
+						source_post_id: platform === 'bluesky' ? qp.uri : qp.id,
+						content: quotedHtml,
+						text_body: quotedTextBody,
+						text_length: quotedTextBody.length,
+						word_count: quotedTextBody ? quotedTextBody.split(/\s+/).length : 0,
+						has_text: quotedTextBody.length > 0,
+						score: 0,
+						replies: 0,
+						fetched_at: new Date(),
+						created_at_remote: qp.createdAt ? new Date(qp.createdAt) : new Date(),
+						expired: false,
+						channel: platform === 'bluesky' ? (qp.author?.handle || null) : null,
+						author: qp.author?.handle || null,
+						author_did: platform === 'bluesky' ? (qp.author?.did || null) : null,
+						author_photo: qp.author?.avatar || null,
+						url: platform === 'bluesky'
+							? `https://bsky.app/profile/${qp.author?.handle}/post/${qp.uri.split('/').pop()}`
+							: (qp.url || null),
+						media: quotedMedia,
+						cid: platform === 'bluesky' ? (qp.cid || null) : null
+					});
+					reply.quoted_external_post_id = quotedPostId;
+				}
+			}
 			//Generate HTML content
 			let htmlContent = '';
 			if (platform === 'reddit') {

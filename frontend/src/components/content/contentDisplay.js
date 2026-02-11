@@ -273,7 +273,7 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 					/>
 				</div>
 			)}
-			{quotedExternalPostData && (
+			{quotedExternalPostData && !post?.is_external && (
 				<div style={{ marginLeft: '20px', marginTop: '12px', marginBottom: '12px' }}>
 					<ExternalPostWidget
 						post={quotedExternalPostData}

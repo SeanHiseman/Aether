@@ -1,7 +1,7 @@
 import { ExternalPosts } from "../../models/content.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
 import { Op } from 'sequelize';
 import { processAccount } from "../../functions/external_posts/processAccount.js";
 import { QueryTypes } from 'sequelize';
@@ -120,6 +120,7 @@ export async function fetchPlatformPosts({ locationId, userId, connectedAccounts
 				where: { post_id: unifiedIds, source: platform, content: { [Op.ne]: null } },
 				raw: true
 			});
+			externalPosts = await attachQuotedExternalPosts(externalPosts);
 		}
 		return externalPosts.map(p => ({
 			...formatExternalPost(p, FEED_CONFIG[platform], p.source),

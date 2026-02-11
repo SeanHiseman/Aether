@@ -1,7 +1,7 @@
 import { ExternalPosts } from "../../models/content.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
 import { Op } from 'sequelize';
 import { Posts } from "../../models/relationships.js";
 import { QueryTypes } from 'sequelize';
@@ -91,6 +91,7 @@ export async function fetchExplorePosts({ viewerId, hasActiveAlgorithm, algorith
 				where: { post_id: unifiedIds, content: { [Op.ne]: null } },
 				raw: true
 			});
+			externalPosts = await attachQuotedExternalPosts(externalPosts);
 		}
 		//console.log(`[EXPLORE ALGORITHM] Loaded ${externalPosts.length} external posts with content`);
 		//Calculate how many native posts we need to reach the limit

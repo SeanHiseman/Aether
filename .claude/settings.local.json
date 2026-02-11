@@ -8,7 +8,10 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(dir:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(xxd:*)",
+      "Bash(grep:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

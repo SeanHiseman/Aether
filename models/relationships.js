@@ -70,6 +70,7 @@ ExternalPosts.hasMany(Reposts, { foreignKey: 'post_id', as: 'external_reposts', 
 
 ExternalPosts.hasMany(ExternalPosts, { as: 'childPosts', foreignKey: 'parent_id', onDelete: 'CASCADE' });
 ExternalPosts.belongsTo(ExternalPosts, { as: 'parentPost', foreignKey: 'parent_id' });
+ExternalPosts.belongsTo(ExternalPosts, { as: 'quotedExternalPost', foreignKey: 'quoted_external_post_id' });
 
 Feeds.belongsToMany(Feeds, { as: 'feedConnections', through: Connections, foreignKey: 'feed1_id', otherKey: 'feed2_id' });
 Feeds.hasMany(ConnectRequests, { as: 'sentRequests', foreignKey: 'sender_id' });

@@ -2,7 +2,7 @@ import { ExternalAccountMeta, ExternalPosts } from "../../models/content.js";
 import { ensureExternalAccountPosts } from "../../functions/external_posts/ensureExternalAccountPosts.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
-import { formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
+import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js";
 import { Op } from 'sequelize';
 import { scoreAndPaginateCandidates } from "../algorithmFunctions/scoreAndPaginateCandidates.js";
 
@@ -77,7 +77,7 @@ export async function fetchExternalAccountPosts({ locationId, userId, hasActiveA
 	} else {
 		//Standard path
 		//Search by both author_did and author (handle) for robustnessThe
-		const rawExternal = await ExternalPosts.findAll({
+		let rawExternal = await ExternalPosts.findAll({
 			where: {
 				source: platform,
 				[Op.or]: [{ author_did: accountId }, { author: accountId }],
@@ -89,6 +89,7 @@ export async function fetchExternalAccountPosts({ locationId, userId, hasActiveA
 			offset,
 			raw: true
 		});
+		rawExternal = await attachQuotedExternalPosts(rawExternal);
 		return rawExternal.map(p => ({
 			...formatExternalPost(p, FEED_CONFIG[platform], platform),
 			isExternal: true
