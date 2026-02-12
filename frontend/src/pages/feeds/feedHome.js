@@ -307,9 +307,10 @@ const FeedHome = () => {
             const currentChannelId = channels.find(c => c?.channel_name === channel_name)?.channel_id;
             const messageChannel = channels.find(c => c?.channel_id === newMessage.channel_id);
 
-            //Only update for chat-enabled channels and if message is in a different channel
+            //Only update for chat-enabled channels, if message is in a different channel, and not sent by the current user
             if (newMessage.channel_id &&
                 newMessage.channel_id !== currentChannelId &&
+                newMessage.sender_id !== viewer?.feed_id &&
                 messageChannel?.is_chat) {
                 //Update the channel's updated_at timestamp and trigger re-render
                 //ChannelList will recalculate hasUnread from localStorage
@@ -337,7 +338,7 @@ const FeedHome = () => {
         return () => {
             socket.off('channel_message_confirmed', handleNewMessage);
         };
-    }, [channel_name, channels, feed?.is_group]);
+    }, [channel_name, channels, feed?.is_group, viewer?.feed_id]);
 
     //Re-render when a channel is marked as read for instant unread dot updates
     useEffect(() => {
