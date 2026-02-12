@@ -238,6 +238,10 @@
 .feed-list-link {
   align-items: center;
   display: flex;
+  flex: 1;
+}
+.feed-list-link-container > a {
+  flex: 1;
 }
 .feed-list-link-container {
   align-items: center;
