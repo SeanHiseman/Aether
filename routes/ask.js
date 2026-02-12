@@ -22,18 +22,20 @@ const xai = new OpenAI({
 
 async function generateContextNote(postContent) {
     return xai.chat.completions.create({
-        model: 'grok-4-1-fast-non-reasoning',
+        model: 'grok-4-1-fast-reasoning',
         search_mode: 'on',
         messages: [
             {
                 role: 'system',
-                content: `You will receive a social media post. The post may contain plain text, opinions, news claims, code snippets, or a mix of these, or other content.
+                content: `Today's date is ${new Date().toISOString().split('T')[0]}. Do not dispute, or use your own knowledge, for events between this date and 1 November 2024, unless via websearch you can verifiably be certain they did not happen.
+                Always use your web search results over your built-in knowledge when checking facts, especially for recent events.
+                You will receive a social media post. The post may contain plain text, opinions, news claims, code snippets, or a mix of these, or other content.
                 Analyze the post for factual accuracy. If misinformation is present, begin your response with 'MISINFO:' followed by a correction of no more than 500 words.
                 If no misinformation is found, provide brief additional context about the topic, no more than 100 words.
                 For code-heavy posts, focus on any factual claims rather than code correctness.
-                Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post. 
+                Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post.
                 No emojis. Be direct and to the point, no starting with 'It seems...', or 'The post...' etc. Elsewhere, refer to the post as 'the post' or 'the content' rather than 'you' or 'the user'.
-                If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text. 
+                If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text.
                 Prioritise the most recent sources, be wary of out-of-date information before making a claim.`
             },
             {

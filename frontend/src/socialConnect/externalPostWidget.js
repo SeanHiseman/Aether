@@ -44,8 +44,8 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const [hasReposted, setHasReposted] = useState(post?.has_reposted || false);
 	const [repostCount, setRepostCount] = useState(post?.repost_count || 0);
 	const [note, setNote] = useState(post?.note ? post?.note?.note_content : '');
-	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
-	console.log("post:", post);
+	//const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
+	const [showNote, setShowNote] = useState(false);
 	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
 	const [showMembershipModal, setShowMembershipModal] = useState(false);
 	const [postErrorMessage, setPostErrorMessage] = useState('');
@@ -480,6 +480,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			{showNote && note && (
 				<div className="ask-note">
 					<p className="ask-note-text" dangerouslySetInnerHTML={{ __html: formatNoteLinks(note) }} />
+					<p className="tiny-text faded-text" style={{ margin: '4px 8px 6px' }}>Auto context is experimental and may not be up-to-date</p>
 				</div>
 			)}
 			{showSaveModal && <SaveToChannelModal post={post} isExternal={true} onClose={() => setShowSaveModal(false)} onSaveComplete={handleSaveComplete} />}

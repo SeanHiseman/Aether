@@ -49,7 +49,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showLoginModal, setShowLoginModal] = useState(false);
 	const [showMembershipModal, setShowMembershipModal] = useState(false);
 	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
-	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
+	//const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
+	const [showNote, setShowNote] = useState(false);
 	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
 	const [showSaveModal, setShowSaveModal] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
@@ -658,6 +659,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			{showNote && note && (
 				<div className="ask-note">
 					<p className="ask-note-text" dangerouslySetInnerHTML={{ __html: formatNoteLinks(note) }} />
+					<p className="tiny-text faded-text" style={{ margin: '4px 8px 6px' }}>Auto context is experimental and may not be up-to-date</p>
 				</div>
 			)}
 			{!isReplyMode && showReplies && (
