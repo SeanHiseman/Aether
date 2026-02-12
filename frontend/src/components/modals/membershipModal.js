@@ -4,7 +4,7 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../authContext';
 
-const MembershipModal = ({ isOpen, onClose, message, title = 'Membership' }) => {
+const MembershipModal = ({ isOpen, onClose, message = 'Get membership to use this feature.', title = 'Membership' }) => {
     const { viewer } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -12,7 +12,7 @@ const MembershipModal = ({ isOpen, onClose, message, title = 'Membership' }) => 
 
     const handleGetMembership = () => {
         onClose();
-        navigate(`settings/${viewer?.feed_name}/membership`);
+        navigate(`/settings/${viewer?.feed_name}/membership`);
     };
 
     return ReactDOM.createPortal(

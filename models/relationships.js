@@ -108,6 +108,9 @@ AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost' });
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note', onDelete: 'CASCADE' });
 
+PostNotes.belongsTo(ExternalPosts, { foreignKey: 'external_post_id', as: 'externalPost' });
+ExternalPosts.hasOne(PostNotes, { foreignKey: 'external_post_id', as: 'note' });
+
 SavedPosts.belongsTo(Posts, { foreignKey: 'post_id', as: 'post' });
 Posts.hasMany(SavedPosts, { foreignKey: 'post_id', as: 'saves' });
 SavedPosts.belongsTo(Feeds,	{ foreignKey: 'feed_id' });

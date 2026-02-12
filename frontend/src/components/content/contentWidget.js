@@ -1,9 +1,10 @@
 import api from '../../api';
-import AskButton from '../askButton';
+import ContextButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaRetweet, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { formatNoteLinks } from '../../functions/formatNoteLinks';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import LoginModal from '../modals/loginModal';
@@ -17,7 +18,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, isQuoted = false, onPostRemoved, parent, post, showAsParent = false, sharedPost = false }) => {
-	//console.log("ContentWidget post:", post);
+	console.log("ContentWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
@@ -46,6 +47,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [showMembershipModal, setShowMembershipModal] = useState(false);
+	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
 	const [showSaveModal, setShowSaveModal] = useState(false);
@@ -476,7 +479,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					)}
 				</div>
 			</div>
-			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
 			<div className="content-metadata">
 				{!isDraft && (
 					<div className="feed-info">
@@ -624,6 +626,17 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 								<FaShare />
 							</button>
 						)}
+						<ContextButton
+							post={post}
+							hasMembership={hasMembership}
+							showNote={showNote}
+							setShowNote={setShowNote}
+							note={note}
+							setNote={setNote}
+							setIsMisinfo={setIsMisinfo}
+							setPostErrorMessage={setPostErrorMessage}
+							setShowMembershipModal={setShowMembershipModal}
+						/>
 					</div>
 				)}
 				{!isDraft && (
@@ -641,6 +654,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					</div>
 				)}
 			</div>
+			{showNote && note && (
+				<div className="ask-note">
+					<p className="ask-note-text" dangerouslySetInnerHTML={{ __html: formatNoteLinks(note) }} />
+				</div>
+			)}
 			{!isReplyMode && showReplies && (
 				<div className="reply-section">
 					{isAuthenticated && !feed?.is_locked && (
@@ -691,6 +709,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
 		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); }} />}
 		{showShareModal && <SharePostModal post={post} isExternal={false} onClose={() => setShowShareModal(false)} />}
+		{showMembershipModal && <MembershipModal isOpen={showMembershipModal} onClose={() => setShowMembershipModal(false)} message="Get membership to see post context notes." />}
 		</>
 	);
 };

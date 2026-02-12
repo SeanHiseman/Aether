@@ -16,6 +16,28 @@
     font-size: medium;
     margin: var(--medium-margin);
 }
+.ask-note-link {
+    color: var(--accent);
+    text-decoration: underline;
+    word-break: break-all;
+}
+.ask-note-link:hover {
+    opacity: 0.8;
+}
+.ask-note-sources {
+    border-top: 1px solid var(--dark-line);
+    margin-top: 8px;
+    padding-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ask-note-sources-label {
+    font-size: small;
+    color: var(--faded);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
 .channel, .channel-content {
     max-width: 100%;
 	overflow-x: hidden;

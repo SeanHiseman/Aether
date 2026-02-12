@@ -11,7 +11,8 @@
       "Bash(findstr:*)",
       "Bash(xxd:*)",
       "Bash(grep:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

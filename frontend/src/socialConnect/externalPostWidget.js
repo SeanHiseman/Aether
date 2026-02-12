@@ -1,7 +1,10 @@
 import api from '../api';
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
+import ContextButton from '../components/askButton';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaRetweet, FaShare } from 'react-icons/fa';
+import MembershipModal from '../components/modals/membershipModal';
+import { formatNoteLinks } from '../functions/formatNoteLinks';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
 import RecommendationInfo from '../components/recommendationInfo';
@@ -14,7 +17,7 @@ import useTimeAgo from '../functions/useTimeAgo';
 const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAsParent = false }) => {
 	//console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
-	const { isAuthenticated = false } = authContext || {};
+	const { isAuthenticated = false, user = null } = authContext || {};
 	const { post_id } = useParams();
 	const navigate = useNavigate();
 	const [isLoaded, setIsLoaded] = useState(false);
@@ -40,6 +43,13 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const [voteError, setVoteError] = useState('');
 	const [hasReposted, setHasReposted] = useState(post?.has_reposted || false);
 	const [repostCount, setRepostCount] = useState(post?.repost_count || 0);
+	const [note, setNote] = useState(post?.note ? post?.note?.note_content : '');
+	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
+	console.log("post:", post);
+	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
+	const [showMembershipModal, setShowMembershipModal] = useState(false);
+	const [postErrorMessage, setPostErrorMessage] = useState('');
+	const hasMembership = user?.has_membership;
 	const timeAgo = useTimeAgo(post?.created_at);
 	const contentContainerRef = useRef(null);
 
@@ -446,6 +456,18 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 						<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
 							<FaShare />
 						</button>
+						<ContextButton
+							post={post}
+							isExternal={true}
+							hasMembership={hasMembership}
+							showNote={showNote}
+							setShowNote={setShowNote}
+							note={note}
+							setNote={setNote}
+							setIsMisinfo={setIsMisinfo}
+							setPostErrorMessage={setPostErrorMessage}
+							setShowMembershipModal={setShowMembershipModal}
+						/>
 					</div>
 				)}
 				<div className="date-container">
@@ -454,9 +476,16 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 					</p>
 				</div>
 			</div>
+			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
+			{showNote && note && (
+				<div className="ask-note">
+					<p className="ask-note-text" dangerouslySetInnerHTML={{ __html: formatNoteLinks(note) }} />
+				</div>
+			)}
 			{showSaveModal && <SaveToChannelModal post={post} isExternal={true} onClose={() => setShowSaveModal(false)} onSaveComplete={handleSaveComplete} />}
 			{showShareModal && <SharePostModal post={post} isExternal={true} onClose={() => setShowShareModal(false)} />}
 			{showQuoteModal && <QuotePostModal externalPost={post} onClose={() => setShowQuoteModal(false)} />}
+			{showMembershipModal && <MembershipModal isOpen={showMembershipModal} onClose={() => setShowMembershipModal(false)} message="Get membership to see post context notes." />}
 			{showReplies && !isQuoted && !sharedPost && (
 				<div className="reply-section">
 					{loadingReplies ? (

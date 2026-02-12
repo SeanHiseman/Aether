@@ -8,6 +8,7 @@ import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { createContextNote } from './ask.js';
 import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
 import multer from 'multer';
 import { Op, Sequelize } from 'sequelize';
@@ -254,93 +255,6 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
 		await transaction.rollback();
 		console.error(new Date().toISOString(), '/content_vote error:', error);
 		return res.status(500).json({ success: false });
-	}
-});
-
-router.post('/toggle_repost', higherLimiter, authenticateCheck, async (req, res) => {
-	const transaction = await sequelize.transaction();
-	try {
-		const { postId, feedId, isExternal = false } = req.body;
-		//Prevent self-repost for native posts
-		if (!isExternal) {
-			const post = await Posts.findByPk(postId, { transaction });
-			if (!post) {
-				await transaction.rollback();
-				return res.status(404).json({ success: false, message: 'Post not found' });
-			}
-			if (post.poster_id === feedId) {
-				await transaction.rollback();
-				return res.status(400).json({
-					success: false,
-					message: 'Cannot repost your own post'
-				});
-			}
-		}
-		//Check if repost exists
-		const existingRepost = await Reposts.findOne({
-			where: { post_id: postId, reposter_id: feedId },
-			transaction
-		});
-		if (existingRepost) {
-			//Remove repost (toggle off)
-			await existingRepost.destroy({ transaction });
-			if (isExternal) {
-				await ExternalPosts.decrement('repost_count', {
-					where: { post_id: postId },
-					transaction
-				});
-			} else {
-				await Posts.decrement('repost_count', {
-					where: { post_id: postId },
-					transaction
-				});
-			}
-			await transaction.commit();
-			//Fetch updated count
-			const updatedPost = isExternal
-				? await ExternalPosts.findByPk(postId)
-				: await Posts.findByPk(postId);
-			return res.status(200).json({
-				success: true,
-				reposted: false,
-				repost_count: updatedPost?.repost_count || 0
-			});
-		} else {
-			await Reposts.create({
-				repost_id: v4(),
-				post_id: postId,
-				reposter_id: feedId,
-				is_external: isExternal
-			}, { transaction });
-			if (isExternal) {
-				await ExternalPosts.increment('repost_count', {
-					where: { post_id: postId },
-					transaction
-				});
-			} else {
-				await Posts.increment('repost_count', {
-					where: { post_id: postId },
-					transaction
-				});
-			}
-			await transaction.commit();
-			//Fetch updated count
-			const updatedPost = isExternal
-				? await ExternalPosts.findByPk(postId)
-				: await Posts.findByPk(postId);
-			return res.status(200).json({
-				success: true,
-				reposted: true,
-				repost_count: updatedPost?.repost_count || 0
-			});
-		}
-	} catch (error) {
-		await transaction.rollback();
-		console.error(new Date().toISOString(), 'Error toggling repost:', error);
-		return res.status(500).json({
-			success: false,
-			message: 'Error toggling repost'
-		});
 	}
 });
 
@@ -601,6 +515,12 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                     }
                 }
             }
+        }
+        //Auto-generate context note for new posts (non-blocking)
+        if (result?.post_id && !post_id && !draft_id) {
+            const noteContent = `${title ? 'Title: ' + title + '\n' : ''}${textBody}`;
+            createContextNote({ postContent: noteContent, postId: result.post_id, isExternal: false })
+                .catch(err => console.error('Auto context note generation failed:', err));
         }
         return res.status(200).json({ success: true, result });
     } catch (error) {
@@ -927,6 +847,93 @@ router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
         console.error(new Date().toISOString(), '/post_replies error:', error);
         return res.status(500).json({ success: false });
     }
+});
+
+router.post('/toggle_repost', higherLimiter, authenticateCheck, async (req, res) => {
+	const transaction = await sequelize.transaction();
+	try {
+		const { postId, feedId, isExternal = false } = req.body;
+		//Prevent self-repost for native posts
+		if (!isExternal) {
+			const post = await Posts.findByPk(postId, { transaction });
+			if (!post) {
+				await transaction.rollback();
+				return res.status(404).json({ success: false, message: 'Post not found' });
+			}
+			if (post.poster_id === feedId) {
+				await transaction.rollback();
+				return res.status(400).json({
+					success: false,
+					message: 'Cannot repost your own post'
+				});
+			}
+		}
+		//Check if repost exists
+		const existingRepost = await Reposts.findOne({
+			where: { post_id: postId, reposter_id: feedId },
+			transaction
+		});
+		if (existingRepost) {
+			//Remove repost (toggle off)
+			await existingRepost.destroy({ transaction });
+			if (isExternal) {
+				await ExternalPosts.decrement('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			} else {
+				await Posts.decrement('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			}
+			await transaction.commit();
+			//Fetch updated count
+			const updatedPost = isExternal
+				? await ExternalPosts.findByPk(postId)
+				: await Posts.findByPk(postId);
+			return res.status(200).json({
+				success: true,
+				reposted: false,
+				repost_count: updatedPost?.repost_count || 0
+			});
+		} else {
+			await Reposts.create({
+				repost_id: v4(),
+				post_id: postId,
+				reposter_id: feedId,
+				is_external: isExternal
+			}, { transaction });
+			if (isExternal) {
+				await ExternalPosts.increment('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			} else {
+				await Posts.increment('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			}
+			await transaction.commit();
+			//Fetch updated count
+			const updatedPost = isExternal
+				? await ExternalPosts.findByPk(postId)
+				: await Posts.findByPk(postId);
+			return res.status(200).json({
+				success: true,
+				reposted: true,
+				repost_count: updatedPost?.repost_count || 0
+			});
+		}
+	} catch (error) {
+		await transaction.rollback();
+		console.error(new Date().toISOString(), 'Error toggling repost:', error);
+		return res.status(500).json({
+			success: false,
+			message: 'Error toggling repost'
+		});
+	}
 });
 
 //Protect against zip bombs

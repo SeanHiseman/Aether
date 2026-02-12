@@ -4,7 +4,7 @@ import cron from 'node-cron';
 import crypto from 'crypto';
 import { ConnectedAccounts, Users } from '../models/users.js';
 import dotenv from 'dotenv';
-import { ExternalAccountMeta, ExternalFollows, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens } from '../models/relationships.js';
+import { ExternalAccountMeta, ExternalFollows, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, PostNotes } from '../models/relationships.js';
 import express from 'express';
 import fetch from 'node-fetch';
 import { fetchAndProcessPosts } from '../functions/external_posts/fetchAndProcessPosts.js';
@@ -636,6 +636,9 @@ router.get('/get_external_post/:post_id', async (req, res) => {
 		const platform = post.source.toLowerCase();
 		const config = FEED_CONFIG[platform];
 		const formattedPost = formatExternalPost(post, config, platform);
+		//Attach note if exists
+		const note = await PostNotes.findOne({ where: { external_post_id: post_id }, raw: true });
+		if (note) formattedPost.note = note;
 		return res.status(200).json({ success: true, post: formattedPost });
 	} catch (error) {
 		console.error(new Date().toISOString(), '/get_external_post error:', error);

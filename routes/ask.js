@@ -11,61 +11,101 @@ import sequelize from '../databaseSetup.js';
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
-const anthropic = new Anthropic({ 
+const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-//ASSITANTS TO BE DEPRECATED
-router.post('/ask_button', authenticateCheck, async (req, res) => {
+const xai = new OpenAI({
+    apiKey: process.env.XAI_API_KEY,
+    baseURL: 'https://api.x.ai/v1'
+});
+
+async function generateContextNote(postContent) {
+    return xai.chat.completions.create({
+        model: 'grok-3-mini',
+        search_mode: 'auto',
+        messages: [
+            {
+                role: 'system',
+                content: `You will receive a social media post. The post may contain plain text, opinions, news claims, code snippets, or a mix of these, or other content.
+                Analyze the post for factual accuracy. If misinformation is present, begin your response with 'MISINFO:' followed by a correction of no more than 500 words.
+                If no misinformation is found, provide brief additional context about the topic, no more than 100 words.
+                For code-heavy posts, focus on any factual claims rather than code correctness.
+                Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post.
+                No emojis. Be direct and to the point, no starting with 'It seems...', or 'The post...' etc.
+                If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text.`
+            },
+            {
+                role: 'user',
+                content: postContent
+            }
+        ]
+    });
+}
+
+//Tracks post IDs currently being generated to prevent duplicate generation
+const generatingNotes = new Set();
+
+export { generateContextNote, xai };
+
+/**
+ * Creates a context note for a post. Handles race conditions via an in-memory lock.
+ * Used by both /context_button and auto-generation in /create_post.
+ * Returns the note object, or null if generation is already in progress.
+ */
+async function createContextNote({ postContent, postId, isExternal }) {
+    const lockKey = `${isExternal ? 'ext' : 'nat'}_${postId}`;
+    //Check if note already exists
+    const whereClause = isExternal
+        ? { external_post_id: postId }
+        : { post_id: postId };
+    const existingNote = await PostNotes.findOne({ where: whereClause });
+    if (existingNote) return { note: existingNote, alreadyExisted: true };
+    //Check if generation is already in progress
+    if (generatingNotes.has(lockKey)) return { note: null, generating: true };
+    //Claim the lock and generate
+    generatingNotes.add(lockKey);
     try {
-        const { postTitle, postContent, id } = req.body;
-        const combinedContent = `Title: ${postTitle}, Content: ${postContent}`;
-        //Creates API assistant
-        const assistant = await openai.beta.assistants.create({
-            name: "Ask",
-            instructions: "Correct misinformation",
-            model: "gpt-4o-mini",
-        });
-        //Send user message to OpenAI
-        const thread = await openai.beta.threads.create();
-        const post = await openai.beta.threads.messages.create(
-            thread.id,
-            {
-                role: "user",
-                content: combinedContent
-            }
-        );
-        //Run OpenAI assistant
-        const run = await openai.beta.threads.runs.create(
-            thread.id,
-            {
-                assistant_id: assistant.id, 
-                instructions: "Begin with 'MISINFO:' if misinformation is present, followed by rest of message: Definite tone, no misinfo mention if none present, instead make regular comment. Reply length < 3 sentences if possible"
-            }
-        );
-        //Wait for OpenAI response
-        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        while (runStatus.status !== "completed") {
-            runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        }
-        //Get OpenAI response
-        const messages = await openai.beta.threads.messages.list(thread.id);
-        let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        const completion = await generateContextNote(postContent);
+        let aiReply = completion.choices[0].message.content;
         const isMisinfo = aiReply.trim().startsWith('MISINFO:');
         if (isMisinfo) {
-            //Remove 'MISINFO:' from beginning of message
             aiReply = aiReply.replace(/^MISINFO:\s*/, '');
         }
-        //Save note to correct table
-        const newNote = await PostNotes.create({
+        const noteData = {
             note_id: v4(),
-            post_id: id,
             note_content: aiReply,
             created_at: Date.now(),
             is_misinfo: isMisinfo
-        });
-        res.status(200).json({ newNote });
+        };
+        if (isExternal) {
+            noteData.external_post_id = postId;
+        } else {
+            noteData.post_id = postId;
+        }
+        const newNote = await PostNotes.create(noteData);
+        return { note: newNote, alreadyExisted: false };
+    } finally {
+        generatingNotes.delete(lockKey);
+    }
+}
+
+export { createContextNote };
+
+router.post('/context_button', authenticateCheck, async (req, res) => {
+    try {
+        const hasMembership = req.session.has_membership || false;
+        if (!hasMembership) {
+            return res.status(403).json({ success: false, message: 'Membership required' });
+        }
+        const { postContent, postId, isExternal } = req.body;
+        const result = await createContextNote({ postContent, postId, isExternal });
+        if (result.generating) {
+            return res.status(202).json({ generating: true });
+        }
+        res.status(200).json({ newNote: result.note });
     } catch (error) {
+        console.error('Context button error:', error);
         res.status(500).json({ success: false });
     }
 });

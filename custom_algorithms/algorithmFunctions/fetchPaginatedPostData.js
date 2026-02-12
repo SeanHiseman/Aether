@@ -1,4 +1,4 @@
-import { ExternalPosts } from "../../models/content.js";
+import { ExternalPosts, PostNotes } from "../../models/content.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
 import { attachQuotedExternalPosts, formatExternalPost } from "../../functions/external_posts/formatExternalPost.js"
 import { Op } from "sequelize";
@@ -24,9 +24,18 @@ export async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOp
 			raw: true
 		});
 		rawExternal = await attachQuotedExternalPosts(rawExternal);
+		//Batch-fetch notes for external posts
+		const extNotes = await PostNotes.findAll({
+			where: { external_post_id: { [Op.in]: externalIdsToFetch } },
+			raw: true
+		});
+		const notesByExtId = {};
+		for (const n of extNotes) notesByExtId[n.external_post_id] = n;
 		finalExternalPosts = rawExternal.map(p => {
 			const platformConfig = FEED_CONFIG[p.source];
-			return formatExternalPost(p, platformConfig, p.source);
+			const formatted = formatExternalPost(p, platformConfig, p.source);
+			if (notesByExtId[p.post_id]) formatted.note = notesByExtId[p.post_id];
+			return formatted;
 		});
 	}
 	//Merge and restore algorithm score ordering
