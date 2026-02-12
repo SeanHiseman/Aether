@@ -2,10 +2,11 @@ import api from '../api';
 import { FaStickyNote, FaSpinner } from 'react-icons/fa';
 import { useState } from 'react';
 
-const ContextButton = ({ post, isExternal = false, hasMembership, showNote, setShowNote, note, setNote, setIsMisinfo, setPostErrorMessage, setShowMembershipModal }) => {
+const ContextButton = ({ post, isExternal = false, hasMembership, showNote, setShowNote, note, setNote, setIsMisinfo, setPostErrorMessage, setShowMembershipModal, onInteract }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClick = async () => {
+        if (onInteract) onInteract();
         if (!hasMembership) {
             setShowMembershipModal(true);
             return;

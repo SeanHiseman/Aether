@@ -674,3 +674,11 @@ ADD COLUMN quoted_external_post_id VARCHAR(255) NULL;
 
 CREATE INDEX idx_external_posts_quoted_external_post_id
 ON external_posts (quoted_external_post_id);
+
+ALTER TABLE post_notes DROP FOREIGN KEY fk_postnotes_post;
+ALTER TABLE post_notes DROP FOREIGN KEY post_notes_ibfk_1;
+ALTER TABLE post_notes MODIFY COLUMN post_id VARCHAR(36) NULL;
+ALTER TABLE post_notes ADD CONSTRAINT fk_postnotes_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
+ALTER TABLE post_notes ADD COLUMN external_post_id VARCHAR(255) NULL AFTER post_id;
+ALTER TABLE post_notes MODIFY COLUMN note_content VARCHAR(5000) NOT NULL;
+ALTER TABLE post_notes ADD INDEX idx_post_notes_external_post_id (external_post_id);

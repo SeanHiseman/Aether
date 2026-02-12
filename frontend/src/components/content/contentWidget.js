@@ -636,6 +636,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							setIsMisinfo={setIsMisinfo}
 							setPostErrorMessage={setPostErrorMessage}
 							setShowMembershipModal={setShowMembershipModal}
+							onInteract={() => incrementViews(post?.post_id)}
 						/>
 					</div>
 				)}
