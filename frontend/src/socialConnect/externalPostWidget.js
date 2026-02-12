@@ -46,7 +46,8 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const [note, setNote] = useState(post?.note ? post?.note?.note_content : '');
 	//const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showNote, setShowNote] = useState(false);
-	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
+	//const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
+	const [isMisinfo, setIsMisinfo] = useState(false);
 	const [showMembershipModal, setShowMembershipModal] = useState(false);
 	const [postErrorMessage, setPostErrorMessage] = useState('');
 	const hasMembership = user?.has_membership;

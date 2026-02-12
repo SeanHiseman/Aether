@@ -48,7 +48,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showLoginModal, setShowLoginModal] = useState(false);
 	const [showMembershipModal, setShowMembershipModal] = useState(false);
-	const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
+	//const [isMisinfo, setIsMisinfo] = useState(post?.note?.is_misinfo || false);
+	const [isMisinfo, setIsMisinfo] = useState(false);
 	//const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showNote, setShowNote] = useState(false);
 	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
