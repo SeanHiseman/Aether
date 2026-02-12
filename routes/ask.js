@@ -22,7 +22,7 @@ const xai = new OpenAI({
 
 async function generateContextNote(postContent) {
     return xai.chat.completions.create({
-        model: 'grok-3-mini',
+        model: 'grok-4-1-fast-non-reasoning',
         search_mode: 'on',
         messages: [
             {
