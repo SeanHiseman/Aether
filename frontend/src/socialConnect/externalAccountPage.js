@@ -85,6 +85,7 @@ export default function ExternalAccountPage() {
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false);
 	const previousAccountRef = useRef(`${platform}_${accountId}`);
+	const offsetRef = useRef(0);
 
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
 
@@ -114,9 +115,10 @@ export default function ExternalAccountPage() {
 			//Get fresh account info to avoid using stale state when switching profiles
 			const currentAccountInfo = getInitialAccountInfo();
 			const url = `/external/${platform}/account/${encodeURIComponent(accountId)}/posts`;
+			const currentOffset = isNextPage ? offsetRef.current : 0;
 			const params = {
 				limit: 50,
-				offset: isNextPage ? offset : 0,
+				offset: currentOffset,
 				//Pass handle and did from fresh accountInfo for better lookup
 				...(currentAccountInfo?.handle && { handle: currentAccountInfo.handle }),
 				...(currentAccountInfo?.did && { did: currentAccountInfo.did })
@@ -127,26 +129,23 @@ export default function ExternalAccountPage() {
 			});
 			const items = Array.isArray(response.data?.items) ? response.data.items : [];
 			if (response.data?.accountInfo) {
-				//console.log('[ExternalAccountPage] Setting accountInfo from response:', response.data.accountInfo);
 				setAccountInfo(response.data.accountInfo);
 			}
 			if (isNextPage) {
 				setPosts(prev => {
 					const existingIds = new Set(prev.map(p => p.post_id));
 					const newItems = items.filter(item => !existingIds.has(item.post_id));
-					//console.log('[ExternalAccountPage] Appending', newItems.length, 'new posts');
 					return [...prev, ...newItems];
 				});
 			} else {
-				//console.log('[ExternalAccountPage] Setting', items.length, 'posts');
 				setPosts(items);
 			}
 			const returnedCount = items.length;
 			if (returnedCount === 0 || !response.data?.hasMore) {
-				//console.log('[ExternalAccountPage] No more posts to load');
 				setHasMore(false);
 			} else {
-				setOffset(prev => prev + returnedCount);
+				offsetRef.current += returnedCount;
+				setOffset(offsetRef.current);
 			}
 			hasLoadedRef.current = true;
 		} catch (error) {
@@ -178,6 +177,7 @@ export default function ExternalAccountPage() {
 		//Reset state for new account
 		hasLoadedRef.current = false;
 		isFetchingRef.current = false;
+		offsetRef.current = 0;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
@@ -204,11 +204,12 @@ export default function ExternalAccountPage() {
 		return () => {
 			element.removeEventListener('scroll', handleScroll);
 		};
-	}, [hasMore, platform, accountId, isAuthenticated, offset]);
+	}, [hasMore, platform, accountId, isAuthenticated]);
 
 	const refreshPosts = () => {
 		isFetchingRef.current = false;
 		setErrorMessage('');
+		offsetRef.current = 0;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
