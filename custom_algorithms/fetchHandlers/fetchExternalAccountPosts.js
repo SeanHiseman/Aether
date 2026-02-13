@@ -28,32 +28,28 @@ export async function fetchExternalAccountPosts({ locationId, userId, hasActiveA
 		const isStale = !accountMeta?.last_fetched_at || timeSinceLastFetch > ONE_HOUR;
 		const authorHandle = accountMeta?.handle || accountId;
 		const authorDid = accountMeta?.account_id || accountId;
-		console.log(new Date().toISOString(), '[fetchExternalAccountPosts]', platform, accountId, '- offset:', offset, 'isStale:', isStale, 'lastFetched:', timeSinceLastFetch ? `${Math.round(timeSinceLastFetch / 60000)}min ago` : 'never');
-		//If first page and stale, fetch latest posts from API
-		if (offset === 0 && isStale) {
-			console.log(new Date().toISOString(), '[fetchExternalAccountPosts] Fetching fresh posts from API for', authorHandle);
+		const dbPostCount = await ExternalPosts.count({
+			where: {
+				source: platform,
+				[Op.or]: [{ author_did: accountId }, { author: accountId }],
+				expired: false,
+				content: { [Op.ne]: null }
+			}
+		});
+		console.log(new Date().toISOString(), '[fetchExternalAccountPosts]', platform, accountId, '- offset:', offset, 'isStale:', isStale, 'dbPostCount:', dbPostCount, 'lastFetched:', timeSinceLastFetch ? `${Math.round(timeSinceLastFetch / 60000)}min ago` : 'never');
+		//If first page and stale or not enough posts in DB, fetch from API
+		if (offset === 0 && (isStale || dbPostCount < limit)) {
 			await ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, null, null);
 		}
 		//If paginating beyond DB content, fetch more using cursor
-		//Re-read meta after potential fresh fetch above to get updated cursor
-		if (offset > 0) {
-			const dbPostCount = await ExternalPosts.count({
-				where: {
-					source: platform,
-					[Op.or]: [{ author_did: accountId }, { author: accountId }],
-					expired: false,
-					content: { [Op.ne]: null }
-				}
+		if (offset > 0 && offset + limit > dbPostCount) {
+			const freshMeta = await ExternalAccountMeta.findOne({
+				where: { platform, [Op.or]: [{ account_id: accountId }, { handle: accountId }] },
+				attributes: ['cursor'],
+				raw: true
 			});
-			if (offset + limit > dbPostCount) {
-				const freshMeta = await ExternalAccountMeta.findOne({
-					where: { platform, [Op.or]: [{ account_id: accountId }, { handle: accountId }] },
-					attributes: ['cursor'],
-					raw: true
-				});
-				if (freshMeta?.cursor) {
-					await ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, freshMeta.cursor, null);
-				}
+			if (freshMeta?.cursor) {
+				await ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, freshMeta.cursor, null);
 			}
 		}
 	}

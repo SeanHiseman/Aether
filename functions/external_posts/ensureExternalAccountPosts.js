@@ -25,13 +25,13 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 		if (platform === 'bluesky') {
 			let data;
 			try {
-				data = await fetchBlueskyAccountPosts(authorHandle, accessToken, cursor, 100);
+				data = await fetchBlueskyAccountPosts(authorDid, accessToken, cursor, 100);
 			} catch (fetchErr) {
 				if (fetchErr.message?.includes('ExpiredToken')) {
 					const newToken = await refreshBlueskyToken(userId);
 					if (!newToken) return { success: false, cursor: null };
 					accessToken = newToken;
-					data = await fetchBlueskyAccountPosts(authorHandle, newToken, cursor, 100);
+					data = await fetchBlueskyAccountPosts(authorDid, newToken, cursor, 100);
 				} else {
 					throw fetchErr;
 				}
