@@ -744,8 +744,9 @@ router.post('/disconnect_external_account', authenticateCheck, async (req, res) 
             return res.status(400).json({ success: false, error: 'Missing platform' });
         }
         await ConnectedAccounts.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
-		await ExternalPostsAccess.destroy({ where: { user_id: req.user.user_id }, transaction });
-		await PaginationTokens.destroy({ where: { user_id: req.user.user_id }, transaction });
+		await ExternalPostsAccess.destroy({ where: { user_id: req.user.user_id, source: platform }, transaction });
+		await PaginationTokens.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
+		await ExternalFollows.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
 		await transaction.commit();
         return res.status(200).json({ success: true });
     } catch (error) {

@@ -27,7 +27,9 @@ export default function SocialFeedPage({ platform }) {
 	const isFetchingRef = useRef(false);
 	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
 	const scrollRef = useRef(null);
-	const hasLoadedRef = useRef(false); 
+	const hasLoadedRef = useRef(false);
+	const offsetRef = useRef(0);
+	const platformRef = useRef(platform);
 	const navigate = useNavigate();
 
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
@@ -67,14 +69,15 @@ export default function SocialFeedPage({ platform }) {
 			setLoadingMore(true);
 		}
 		const fetchLimit = platform === 'mastodon' ? 40 : 100;
+		const requestPlatform = platform;
 		try {
 			const response = await api.get(`/${platform}/feed`, {
-				params: { limit: fetchLimit, offset },
+				params: { limit: fetchLimit, offset: offsetRef.current },
 				withCredentials: true
 			});
-			//console.log(`${platform} feed response:`, response);
+			//Discard stale response if platform changed during request
+			if (platformRef.current !== requestPlatform) return;
 			const items = Array.isArray(response.data?.items) ? response.data.items : [];
-			const status = response.data?.status;
 			const message = response.data?.message;
 			if (!isNextPage && message) {
 				setErrorMessage(message);
@@ -90,19 +93,23 @@ export default function SocialFeedPage({ platform }) {
 				setPosts(items);
 			}
 			const returnedCount = items.length;
-			//Use hasMore from response, fallback to checking returnedCount
 			if (response.data?.hasMore === false || returnedCount === 0) {
 				setHasMore(false);
 			} else {
-				setOffset(prev => prev + returnedCount);
+				offsetRef.current += returnedCount;
+				setOffset(offsetRef.current);
 			}
 			hasLoadedRef.current = true;
 		} catch (error) {
-			setErrorMessage('Error getting posts');
+			if (platformRef.current === requestPlatform) {
+				setErrorMessage('Error getting posts');
+			}
 		} finally {
 			isFetchingRef.current = false;
-			setLoading(false);
-			setLoadingMore(false);
+			if (platformRef.current === requestPlatform) {
+				setLoading(false);
+				setLoadingMore(false);
+			}
 		}
 	}
 
@@ -118,6 +125,7 @@ export default function SocialFeedPage({ platform }) {
 			//Navigated back from single post to feed - reset and reload
 			hasLoadedRef.current = false;
 			isFetchingRef.current = false;
+			offsetRef.current = 0;
 			setOffset(0);
 			setHasMore(true);
 			setPosts([]);
@@ -133,6 +141,7 @@ export default function SocialFeedPage({ platform }) {
 		if (!isAuthenticated) return;
 		if (hasLoadedRef.current) return;
 		if (justConnected) return;
+		offsetRef.current = 0;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
@@ -142,7 +151,9 @@ export default function SocialFeedPage({ platform }) {
 
 	useEffect(() => {
 		//Always reset state when platform changes
+		platformRef.current = platform;
 		hasLoadedRef.current = false;
+		offsetRef.current = 0;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
@@ -171,6 +182,7 @@ export default function SocialFeedPage({ platform }) {
 						const parsedPosts = JSON.parse(cachedPosts);
 						//console.log("found cached posts length:", parsedPosts.length);
 						setPosts(parsedPosts);
+						offsetRef.current = parsedPosts.length;
 						setOffset(parsedPosts.length);
 						setLoading(false);
 						hasLoadedRef.current = true;
@@ -213,7 +225,7 @@ export default function SocialFeedPage({ platform }) {
 		return () => {
 			element.removeEventListener('scroll', handleScroll);
 		};
-	}, [hasMore, platform, isAuthenticated, offset]);
+	}, [hasMore, platform, isAuthenticated]);
 
 	useEffect(() => {
 		if (post_id) return; // Skip refresh if viewing single post
@@ -225,6 +237,7 @@ export default function SocialFeedPage({ platform }) {
 	const refreshPosts = () => {
 		isFetchingRef.current = false;
 		setErrorMessage('');
+		offsetRef.current = 0;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
@@ -282,10 +295,12 @@ export default function SocialFeedPage({ platform }) {
 					const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
 					const updated = existing.filter(a => a.platform !== platform);
 					localStorage.setItem("connectedAccounts", JSON.stringify(updated));
+					localStorage.removeItem(`${platform}Follows`);
+					updateFeeds();
 					setModalOpen(false);
 					navigate('/explore');
 				} catch (error) { }
-			}} 
+			}}
 		/></>
 	);
 }
