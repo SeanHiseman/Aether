@@ -198,6 +198,7 @@ export async function fetchAndStoreReplies({ post, accessToken, instanceUrl }) {
 						cid: platform === 'bluesky' ? (qp.cid || null) : null
 					});
 					reply.quoted_external_post_id = quotedPostId;
+					delete reply.media.quotedPost;
 				}
 			}
 			//Generate HTML content

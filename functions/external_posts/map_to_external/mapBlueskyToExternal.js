@@ -124,6 +124,17 @@ export function mapBlueskyToExternal(item) {
 		card: externalCard,
 		quotedPost: quotedPost
 	};
+	//When a quoted post exists, remove the card if it's a preview of the quoted post
+	//(to avoid showing the quoted post as both a card embed and a full ExternalPostWidget)
+	if (quotedPost && media.card && media.card.uri && quotedPost.uri) {
+		const rkey = quotedPost.uri.split('/').pop();
+		if (rkey && quotedPost.author?.handle) {
+			const quotedBskyUrl = `https://bsky.app/profile/${quotedPost.author.handle}/post/${rkey}`;
+			if (media.card.uri === quotedBskyUrl) {
+				media.card = null;
+			}
+		}
+	}
 	return {
 		post_id: `bluesky:${post.uri}`,
 		author: post.author?.handle || null,

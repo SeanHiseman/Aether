@@ -186,8 +186,10 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				media: quotedMedia,
 				cid: platform === 'bluesky' ? (qp.cid || null) : null
 			});
-			//Set the reference on the parent
+			//Set the reference on the parent and remove quotedPost from media
+			//(it's now stored separately via quoted_external_post_id)
 			mapped.quoted_external_post_id = quotedPostId;
+			delete mapped.media.quotedPost;
 		}
 		//Store quoted posts (upsert to avoid duplicates)
 		if (quotedPostsToStore.length > 0) {

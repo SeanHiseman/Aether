@@ -1,6 +1,6 @@
 export function mapMastodonToExternal(toot, instance) {
 	//Mastodon api does not provide raw text
-	const htmlContent = toot.content || '';
+	let htmlContent = toot.content || '';
 	const rawText = htmlContent.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
 	//Extract quoted post if present (Mastodon 4.5+)
 	let quotedPost = null;
@@ -47,6 +47,21 @@ export function mapMastodonToExternal(toot, instance) {
 		} : null,
 		quotedPost: quotedPost
 	};
+	//When a quoted post exists, remove the card if it's a preview of the quoted post
+	//and strip the quoted post link from the HTML (both are redundant since the quoted
+	//post is rendered as its own ExternalPostWidget by the frontend)
+	if (quotedPost) {
+		if (media.card && quotedPost.url && media.card.url) {
+			if (media.card.url === quotedPost.url || (quotedPost.id && media.card.url.includes(`/${quotedPost.id}`))) {
+				media.card = null;
+			}
+		}
+		if (quotedPost.url) {
+			const escapedUrl = quotedPost.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			htmlContent = htmlContent.replace(new RegExp(`<a[^>]*href=["']${escapedUrl}["'][^>]*>[\\s\\S]*?</a>`, 'gi'), '');
+			htmlContent = htmlContent.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/g, '');
+		}
+	}
 	//Use the Mastodon post URL, not the card/article URL
 	let postUrl = toot.url || null;
 	//For article-type posts (e.g. from ActivityPub blogs), toot.url may be the article URL instead of the Mastodon post URL. Detect by comparing origins with the account.
