@@ -15,7 +15,10 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 		attributes: ['access_token', 'instance_url'],
 		raw: true
 	});
-	if (!connectedAccount?.access_token) return { success: false, cursor: null };
+	if (!connectedAccount?.access_token) {
+		console.log(new Date().toISOString(), '[ensureExternalAccountPosts] No access token for', platform, authorHandle);
+		return { success: false, cursor: null };
+	}
 	let accessToken = connectedAccount.access_token;
 	const instance = instanceUrl || connectedAccount.instance_url;
 	try {
@@ -33,7 +36,9 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 					throw fetchErr;
 				}
 			}
-			if (!data?.feed?.length) return { success: true, cursor: null };
+			const feedLength = data?.feed?.length || 0;
+			console.log(new Date().toISOString(), '[ensureExternalAccountPosts]', platform, authorHandle, '- API returned', feedLength, 'items, cursor:', cursor ? 'yes' : 'no');
+			if (!feedLength) return { success: true, cursor: null };
 			//Filter to only this author's posts (no reposts/replies)
 			const apiPosts = data.feed.filter(item => {
 				if (item.reply) return false;
@@ -41,6 +46,7 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 				const postAuthorDid = item.post?.author?.did;
 				return postAuthorHandle === authorHandle || postAuthorDid === authorDid;
 			});
+			console.log(new Date().toISOString(), '[ensureExternalAccountPosts]', platform, authorHandle, '- After filter:', apiPosts.length, 'posts (from', feedLength, 'items)');
 			//Extract actual handle from API response (don't store DIDs in handle column)
 			let actualHandle = authorHandle;
 			if (actualHandle?.startsWith('did:') && apiPosts.length > 0) {
@@ -50,7 +56,10 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			}
 			//Store posts and cursor
 			if (apiPosts.length > 0) {
-				await processQuick(platform, authorDid, apiPosts, GenerateBlueskyHTML);
+				const stored = await processQuick(platform, authorDid, apiPosts, GenerateBlueskyHTML);
+				console.log(new Date().toISOString(), '[ensureExternalAccountPosts]', platform, authorHandle, '- processQuick stored', stored, 'posts');
+			} else {
+				console.log(new Date().toISOString(), '[ensureExternalAccountPosts]', platform, authorHandle, '- No posts after filtering, skipping processQuick');
 			}
 			//Always update last_fetched_at timestamp
 			const [meta, created] = await ExternalAccountMeta.findOrCreate({

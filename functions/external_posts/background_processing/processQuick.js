@@ -42,6 +42,7 @@ export async function processQuick(platform, accountId, posts, htmlGenerator, in
         });
         const existingIds = new Set(existingPosts.map(r => r.post_id));
         const postsToInsert = uniquePosts.filter(p => !existingIds.has(p.post_id));
+        console.log(new Date().toISOString(), '[processQuick]', platform, '- total:', uniquePosts.length, 'existing:', existingIds.size, 'new:', postsToInsert.length);
         //Quick insert - just basic HTML, no heavy processing
         if (postsToInsert.length > 0) {
             const quickInserts = await Promise.all(postsToInsert.map(async mapped => {

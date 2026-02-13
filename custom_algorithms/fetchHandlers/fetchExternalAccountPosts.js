@@ -21,13 +21,17 @@ export async function fetchExternalAccountPosts({ locationId, userId, hasActiveA
 			attributes: ['last_fetched_at', 'cursor', 'account_id', 'handle'],
 			raw: true
 		});
-		const FIVE_MINUTES = 5 * 60 * 1000;
-		const isStale = !accountMeta?.last_fetched_at ||
-			(Date.now() - new Date(accountMeta.last_fetched_at).getTime()) > FIVE_MINUTES;
+		const ONE_HOUR = 60 * 60 * 1000;
+		const timeSinceLastFetch = accountMeta?.last_fetched_at
+			? Date.now() - new Date(accountMeta.last_fetched_at).getTime()
+			: null;
+		const isStale = !accountMeta?.last_fetched_at || timeSinceLastFetch > ONE_HOUR;
 		const authorHandle = accountMeta?.handle || accountId;
 		const authorDid = accountMeta?.account_id || accountId;
+		console.log(new Date().toISOString(), '[fetchExternalAccountPosts]', platform, accountId, '- offset:', offset, 'isStale:', isStale, 'lastFetched:', timeSinceLastFetch ? `${Math.round(timeSinceLastFetch / 60000)}min ago` : 'never');
 		//If first page and stale, fetch latest posts from API
 		if (offset === 0 && isStale) {
+			console.log(new Date().toISOString(), '[fetchExternalAccountPosts] Fetching fresh posts from API for', authorHandle);
 			await ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, null, null);
 		}
 		//If paginating beyond DB content, fetch more using cursor
