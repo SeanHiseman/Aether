@@ -250,7 +250,7 @@ export default function ExternalAccountPage() {
 				) : (
 					<div className="flex flex-col w-99">
 						{posts.map((post) => (
-							<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+							<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl med-mar-bottom">
 								<ExternalPostWidget post={post} />
 							</div>
 						))}
