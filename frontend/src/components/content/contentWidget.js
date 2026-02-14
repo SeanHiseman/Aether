@@ -528,8 +528,14 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				)}
 				{!isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
-						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
-							{showReplies ? <FaCommentSlash /> : <FaComments />}
+						<button className="large-icon" data-content-id={post?.post_id} onClick={() => {
+							if (showAsParent) {
+								navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`);
+							} else {
+								toggleReplies();
+							}
+						}} title={showAsParent ? "View Replies" : showReplies ? "Close Replies" : "Show Replies"}>
+							{showReplies && !showAsParent ? <FaCommentSlash /> : <FaComments />}
 							<p className="small-text" id={`reply-count-${post?.post_id}`}>{post?.replies}</p>
 						</button>
 					</div>
