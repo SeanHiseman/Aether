@@ -32,7 +32,7 @@ For code-heavy posts, focus on any factual claims rather than code correctness.
 Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post.
 No emojis. Be direct and to the point, no starting with 'It seems...', or 'The post...' etc. Elsewhere, refer to the post as 'the post' or 'the content' rather than 'you' or 'the user'.
 If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text.
-Prioritise the most recent sources, be wary of out-of-date information before making a claim.`;
+Prioritise the most recent sources, be wary of out-of-date information before making a claim. If a claim appears to be humerous, ironic, or a joke, do not treat it as factual, but instead respond with a light-hearted comment about the humour.`;
 
 async function generateContextNote({ textContent, imageUrls = [] }) {
     //Use Claude vision when images are present, otherwise use Grok with web search
