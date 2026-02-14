@@ -5,7 +5,10 @@ import OpenAI from "openai";
 import { Router } from 'express';
 import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, PostNotes, Prompts, Users } from '../models/relationships.js';
+import { AskChats, AskMessages, ExternalPosts, PostNotes, Posts, Prompts, Users } from '../models/relationships.js';
+import cheerio from 'cheerio';
+import fs from 'fs';
+import path from 'path';
 import sequelize from '../databaseSetup.js';
 
 dotenv.config();
@@ -20,28 +23,39 @@ const xai = new OpenAI({
     baseURL: 'https://api.x.ai/v1'
 });
 
-async function generateContextNote(postContent) {
+const contextNoteSystemPrompt = `Today's date is ${new Date().toISOString().split('T')[0]}. Do not dispute, or use your own knowledge, for events between this date and 1 November 2024, unless via websearch you can verifiably be certain they did not happen.
+Always use your web search results over your built-in knowledge when checking facts, especially for recent events.
+You will receive a social media post. The post may contain plain text, opinions, news claims, code snippets, or a mix of these, or other content. Images may also be attached.
+Analyze the post for factual accuracy. If misinformation is present, begin your response with 'MISINFO:' followed by a correction of no more than 500 words.
+If no misinformation is found, provide brief additional context about the topic, no more than 100 words.
+For code-heavy posts, focus on any factual claims rather than code correctness.
+Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post.
+No emojis. Be direct and to the point, no starting with 'It seems...', or 'The post...' etc. Elsewhere, refer to the post as 'the post' or 'the content' rather than 'you' or 'the user'.
+If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text.
+Prioritise the most recent sources, be wary of out-of-date information before making a claim.`;
+
+async function generateContextNote({ textContent, imageUrls = [] }) {
+    //Use Claude vision when images are present, otherwise use Grok with web search
+    if (imageUrls.length > 0) {
+        const content = [{ type: 'text', text: textContent }];
+        for (const url of imageUrls.slice(0, 4)) {
+            content.push({ type: 'image', source: { type: 'url', url } });
+        }
+        const response = await anthropic.messages.create({
+            model: 'claude-sonnet-4-5-20250929',
+            max_tokens: 1024,
+            system: contextNoteSystemPrompt,
+            messages: [{ role: 'user', content }]
+        });
+        //Format to match OpenAI-style response for consistent handling
+        return { choices: [{ message: { content: response.content[0].text } }] };
+    }
     return xai.chat.completions.create({
         model: 'grok-4-1-fast-reasoning',
         search_mode: 'on',
         messages: [
-            {
-                role: 'system',
-                content: `Today's date is ${new Date().toISOString().split('T')[0]}. Do not dispute, or use your own knowledge, for events between this date and 1 November 2024, unless via websearch you can verifiably be certain they did not happen.
-                Always use your web search results over your built-in knowledge when checking facts, especially for recent events.
-                You will receive a social media post. The post may contain plain text, opinions, news claims, code snippets, or a mix of these, or other content.
-                Analyze the post for factual accuracy. If misinformation is present, begin your response with 'MISINFO:' followed by a correction of no more than 500 words.
-                If no misinformation is found, provide brief additional context about the topic, no more than 100 words.
-                For code-heavy posts, focus on any factual claims rather than code correctness.
-                Use a friendly, informative and brief tone. Remember that you are talking directly to the user about the post.
-                No emojis. Be direct and to the point, no starting with 'It seems...', or 'The post...' etc. Elsewhere, refer to the post as 'the post' or 'the content' rather than 'you' or 'the user'.
-                If you have sources, list them at the end under a "Sources:" heading, one per line as markdown links: [Title](url). Do not inline source URLs in the main text.
-                Prioritise the most recent sources, be wary of out-of-date information before making a claim.`
-            },
-            {
-                role: 'user',
-                content: postContent
-            }
+            { role: 'system', content: contextNoteSystemPrompt },
+            { role: 'user', content: textContent }
         ]
     });
 }
@@ -56,7 +70,7 @@ export { generateContextNote, xai };
  * Used by both /context_button and auto-generation in /create_post.
  * Returns the note object, or null if generation is already in progress.
  */
-async function createContextNote({ postContent, postId, isExternal }) {
+async function createContextNote({ postContent, postId, isExternal, parentContent, quotedContent, imageUrls = [] }) {
     const lockKey = `${isExternal ? 'ext' : 'nat'}_${postId}`;
     //Check if note already exists
     const whereClause = isExternal
@@ -69,7 +83,12 @@ async function createContextNote({ postContent, postId, isExternal }) {
     //Claim the lock and generate
     generatingNotes.add(lockKey);
     try {
-        const completion = await generateContextNote(postContent);
+        //Build enriched text content with parent/quoted context
+        let textContent = '';
+        if (parentContent) textContent += `This post is a reply to: """${parentContent}"""\n`;
+        if (quotedContent) textContent += `This post quotes: """${quotedContent}"""\n`;
+        textContent += `Post content: ${postContent}`;
+        const completion = await generateContextNote({ textContent, imageUrls });
         let aiReply = completion.choices[0].message.content;
         const isMisinfo = aiReply.trim().startsWith('MISINFO:');
         if (isMisinfo) {
@@ -102,7 +121,75 @@ router.post('/context_button', authenticateCheck, async (req, res) => {
             return res.status(403).json({ success: false, message: 'Membership required' });
         }
         const { postContent, postId, isExternal } = req.body;
-        const result = await createContextNote({ postContent, postId, isExternal });
+        let parentContent = null;
+        let quotedContent = null;
+        let imageUrls = [];
+        if (isExternal) {
+            const extPost = await ExternalPosts.findByPk(postId, {
+                attributes: ['parent_id', 'quoted_external_post_id', 'content']
+            });
+            if (extPost) {
+                if (extPost.parent_id) {
+                    const parent = await ExternalPosts.findByPk(extPost.parent_id, { attributes: ['text_body', 'title'] });
+                    if (parent) parentContent = `${parent.title ? parent.title + ': ' : ''}${parent.text_body || ''}`;
+                }
+                if (extPost.quoted_external_post_id) {
+                    const quoted = await ExternalPosts.findByPk(extPost.quoted_external_post_id, { attributes: ['text_body', 'title'] });
+                    if (quoted) quotedContent = `${quoted.title ? quoted.title + ': ' : ''}${quoted.text_body || ''}`;
+                }
+                //Extract image URLs from external post HTML content
+                if (extPost.content) {
+                    const $ = cheerio.load(extPost.content);
+                    $('img').each((_, el) => {
+                        const src = $(el).attr('src');
+                        if (src) imageUrls.push(src);
+                    });
+                }
+            }
+        } else {
+            const post = await Posts.findByPk(postId, {
+                attributes: ['parent_id', 'quoted_post_id', 'quoted_external_post_id', 'content']
+            });
+            if (post) {
+                if (post.parent_id) {
+                    const parent = await Posts.findByPk(post.parent_id, { attributes: ['text_body', 'title'] });
+                    if (parent) parentContent = `${parent.title ? parent.title + ': ' : ''}${parent.text_body || ''}`;
+                }
+                if (post.quoted_post_id) {
+                    const quoted = await Posts.findByPk(post.quoted_post_id, { attributes: ['text_body', 'title'] });
+                    if (quoted) quotedContent = `${quoted.title ? quoted.title + ': ' : ''}${quoted.text_body || ''}`;
+                }
+                if (post.quoted_external_post_id) {
+                    const quoted = await ExternalPosts.findByPk(post.quoted_external_post_id, { attributes: ['text_body', 'title'] });
+                    if (quoted) quotedContent = `${quoted.title ? quoted.title + ': ' : ''}${quoted.text_body || ''}`;
+                }
+                //Extract image URLs from native post HTML content
+                if (post.content) {
+                    try {
+                        let html;
+                        if (post.content.startsWith('http')) {
+                            const resp = await fetch(post.content);
+                            html = await resp.text();
+                        } else {
+                            const filePath = path.join(process.cwd(), post.content);
+                            if (fs.existsSync(filePath)) html = fs.readFileSync(filePath, 'utf-8');
+                        }
+                        if (html) {
+                            const $ = cheerio.load(html);
+                            $('img').each((_, el) => {
+                                const src = $(el).attr('src');
+                                if (src) imageUrls.push(src);
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to extract images from native post:', err);
+                    }
+                }
+            }
+        }
+        //Only keep absolute URLs (Claude vision API can't access relative/local paths)
+        imageUrls = imageUrls.filter(url => url.startsWith('http'));
+        const result = await createContextNote({ postContent, postId, isExternal, parentContent, quotedContent, imageUrls });
         if (result.generating) {
             return res.status(202).json({ generating: true });
         }

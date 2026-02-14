@@ -519,8 +519,33 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
         //Auto-generate context note for new posts (non-blocking)
         if (result?.post_id && !post_id && !draft_id) {
             const noteContent = `${title ? 'Title: ' + title + '\n' : ''}${textBody}`;
-            createContextNote({ postContent: noteContent, postId: result.post_id, isExternal: false })
-                .catch(err => console.error('Auto context note generation failed:', err));
+            //Extract image URLs from final HTML
+            const noteImages = [];
+            $('img').each((_, el) => {
+                const src = $(el).attr('src');
+                if (src && src.startsWith('http')) noteImages.push(src);
+            });
+            //Fetch parent/quoted content for enriched context
+            const noteEnrichment = (async () => {
+                let parentContent = null;
+                let quotedContent = null;
+                if (parent_id) {
+                    const parent = await Posts.findByPk(parent_id, { attributes: ['text_body', 'title'] });
+                    if (parent) parentContent = `${parent.title ? parent.title + ': ' : ''}${parent.text_body || ''}`;
+                }
+                if (quoted_post_id) {
+                    const quoted = await Posts.findByPk(quoted_post_id, { attributes: ['text_body', 'title'] });
+                    if (quoted) quotedContent = `${quoted.title ? quoted.title + ': ' : ''}${quoted.text_body || ''}`;
+                } else if (quoted_external_post_id) {
+                    const quoted = await ExternalPosts.findByPk(quoted_external_post_id, { attributes: ['text_body', 'title'] });
+                    if (quoted) quotedContent = `${quoted.title ? quoted.title + ': ' : ''}${quoted.text_body || ''}`;
+                }
+                return { parentContent, quotedContent };
+            })();
+            noteEnrichment.then(({ parentContent, quotedContent }) => {
+                createContextNote({ postContent: noteContent, postId: result.post_id, isExternal: false, parentContent, quotedContent, imageUrls: noteImages })
+                    .catch(err => console.error('Auto context note generation failed:', err));
+            }).catch(err => console.error('Auto context note enrichment failed:', err));
         }
         return res.status(200).json({ success: true, result });
     } catch (error) {
