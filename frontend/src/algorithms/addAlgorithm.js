@@ -453,7 +453,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                     <button className="button button--success" onClick={submitAlgorithm} type="button" disabled={loading}>
                         {loading
                             ? editingAlgorithm ? 'Saving...' : 'Creating...'
-                            : editingAlgorithm ? 'Save Changes' : 'Create'}
+                            : editingAlgorithm ? 'Save' : 'Create'}
                     </button>
                 </div>}
             </div>

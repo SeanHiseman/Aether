@@ -126,8 +126,16 @@
 .create-header {
 	align-items: center;
 	display: flex;
+	gap: 8px;
 	justify-content: space-between;
 	width: 99%;
+}
+.create-header > p {
+	white-space: nowrap;
+}
+.create-header > div {
+	display: flex;
+	flex-shrink: 0;
 }
 .current-assignment {
 	color: var(--light);
