@@ -208,7 +208,7 @@ export async function fetchAndStoreReplies({ post, accessToken, instanceUrl }) {
 			} else if (platform === 'bluesky') {
 				htmlContent = await GenerateBlueskyHTML(reply.text_body, reply.media);
 			} else if (platform === 'mastodon') {
-				htmlContent = await GenerateMastodonHTML(reply.text_body, reply.media);
+				htmlContent = await GenerateMastodonHTML(reply.content, reply.media);
 			}
 			// Skip replies with empty/null content
 			if (!htmlContent || htmlContent.trim() === '') {

@@ -81,6 +81,20 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 								type: 'media',
 								url: src?.src || '',
 							});
+						} else {
+							const audio = div.querySelector('audio');
+							if (audio) {
+								const src = audio.querySelector('source');
+								parsed.push({
+									align,
+									id,
+									isAudio: true,
+									isImage: false,
+									isVideo: false,
+									type: 'media',
+									url: src?.src || '',
+								});
+							}
 						}
 					} else if (div.classList.contains('link-preview')) {
 						const anchor = div.querySelector('a');
@@ -244,6 +258,13 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 								>
 									<source src={block?.url} type={block?.fileType || 'video/*'} />
 								</video>
+							);
+						}
+						if (block?.isAudio) {
+							return (
+								<audio key={i} controls style={{ width: '100%' }}>
+									<source src={block?.url} />
+								</audio>
 							);
 						}
 						return <div key={i}>Unsupported</div>;

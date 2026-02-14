@@ -98,7 +98,9 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			}
 			case 'mastodon': {
 				if (!Array.isArray(data)) return [];
-				mappedPosts = data.map(t => {
+				//Filter out boosts/reblogs — these are reposts of other users' content
+				const originalPosts = data.filter(t => !t.reblog);
+				mappedPosts = originalPosts.map(t => {
 					const p = mapper(t, fetchConfig.instance);
 					const rank_hotness = computeHotness({
 						upvotes: p.score || 0,

@@ -2,10 +2,11 @@ import crypto from 'crypto';
 import { escapeHtml } from '../../escapeHtml.js';
 
 //Mastodon posts use html, not raw text
+//Mastodon attachment types: image, video, gifv, audio, unknown
 export async function GenerateMastodonHTML(htmlContent, media) {
     try {
         let out = '';
-        if (htmlContent) {
+        if (htmlContent && htmlContent.trim()) {
             out += `
                 <div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
                     ${htmlContent}
@@ -15,34 +16,59 @@ export async function GenerateMastodonHTML(htmlContent, media) {
         if (media?.attachments && Array.isArray(media.attachments)) {
             for (const m of media.attachments) {
                 if (!m.url) continue;
-                if (m.type === 'gifv') {
-                    //GIFs on Mastodon are MP4s that should autoplay and loop
-                    out += `
-                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                            <video autoplay loop muted playsinline style="max-width: 100%;">
-                                <source src="${escapeHtml(m.url)}" type="video/mp4" />
-                            </video>
-                        </div>
-                    `;
-                } else if (m.type === 'video') {
-                    out += `
-                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                            <video controls playsinline style="max-width: 100%;">
-                                <source src="${escapeHtml(m.url)}" type="video/mp4" />
-                            </video>
-                        </div>
-                    `;
-                } else {
-                    out += `
-                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                            <img src="${escapeHtml(m.url)}" alt="Mastodon media" />
-                        </div>
-                    `;
+                switch (m.type) {
+                    case 'gifv':
+                        //GIFs on Mastodon are MP4s that should autoplay and loop
+                        out += `
+                            <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                                <video autoplay loop muted playsinline style="max-width: 100%;">
+                                    <source src="${escapeHtml(m.url)}" type="video/mp4" />
+                                </video>
+                            </div>
+                        `;
+                        break;
+                    case 'video':
+                        out += `
+                            <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                                <video controls playsinline style="max-width: 100%;">
+                                    <source src="${escapeHtml(m.url)}" />
+                                </video>
+                            </div>
+                        `;
+                        break;
+                    case 'audio':
+                        out += `
+                            <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                                <audio controls style="width: 100%;">
+                                    <source src="${escapeHtml(m.url)}" />
+                                </audio>
+                            </div>
+                        `;
+                        break;
+                    case 'image':
+                    default:
+                        //Treat image and unknown types as images — if URL is a video format, render as video
+                        if (/\.(mp4|webm|mov|m4v|gifv)(\?|$)/i.test(m.url)) {
+                            out += `
+                                <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                                    <video controls playsinline style="max-width: 100%;">
+                                        <source src="${escapeHtml(m.url)}" />
+                                    </video>
+                                </div>
+                            `;
+                        } else {
+                            out += `
+                                <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                                    <img src="${escapeHtml(m.url)}" alt="Mastodon media" />
+                                </div>
+                            `;
+                        }
+                        break;
                 }
             }
         }
         //Create card (link preview)
-        if (media?.card) {
+        if (media?.card && media.card.url) {
             const card = media.card;
             try {
                 const hostname = card.hostname || new URL(card.url).hostname;
@@ -63,22 +89,18 @@ export async function GenerateMastodonHTML(htmlContent, media) {
                     url: card.url,
                     error: urlError.message
                 });
-                // Skip card if URL is invalid
             }
         }
         //Quoted post is rendered by the frontend ExternalPostWidget component
         const result = out.trim();
-
-        // Log warning if content is empty
         if (!result) {
             console.warn('[GenerateMastodonHTML] Generated empty HTML:', {
-                hasHtmlContent: !!htmlContent,
-                htmlContentLength: htmlContent?.length || 0,
-                hasAttachments: !!(media?.attachments && media.attachments.length > 0),
+                htmlContent: htmlContent?.substring(0, 200),
+                attachmentCount: media?.attachments?.length || 0,
+                attachmentTypes: media?.attachments?.map(a => a.type) || [],
                 hasCard: !!media?.card
             });
         }
-
         return result;
     } catch (error) {
         console.error('[GenerateMastodonHTML] Error generating HTML:', {

@@ -1,8 +1,7 @@
 export async function fetchMastodonAccountPosts(accountId, accessToken, instanceUrl, maxId = null, limit = 40) {
 	try {
-		const url = maxId
-			? `${instanceUrl}/api/v1/accounts/${encodeURIComponent(accountId)}/statuses?limit=${Math.min(limit, 40)}&max_id=${maxId}`
-			: `${instanceUrl}/api/v1/accounts/${encodeURIComponent(accountId)}/statuses?limit=${Math.min(limit, 40)}`;
+		const params = `limit=${Math.min(limit, 40)}&exclude_reblogs=true${maxId ? `&max_id=${maxId}` : ''}`;
+		const url = `${instanceUrl}/api/v1/accounts/${encodeURIComponent(accountId)}/statuses?${params}`;
 		const response = await fetch(url, {
 			headers: {
 				'Authorization': `Bearer ${accessToken}`

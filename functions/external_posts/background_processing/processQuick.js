@@ -9,7 +9,9 @@ import { processBackground } from "./processBackground.js";
 //Heavy processing (embeddings, sentiment) happens in background
 export async function processQuick(platform, accountId, posts, htmlGenerator, instanceUrl = null) {
     try {
-        const mappedPosts = posts.map(item => {
+        //Filter out Mastodon boosts/reblogs before mapping
+        const filteredPosts = platform === 'mastodon' ? posts.filter(item => !item.reblog) : posts;
+        const mappedPosts = filteredPosts.map(item => {
             let p;
             if (platform === 'bluesky') {
                 p = mapBlueskyToExternal(item);
@@ -45,10 +47,11 @@ export async function processQuick(platform, accountId, posts, htmlGenerator, in
         console.log(new Date().toISOString(), '[processQuick]', platform, '- total:', uniquePosts.length, 'existing:', existingIds.size, 'new:', postsToInsert.length);
         //Quick insert - just basic HTML, no heavy processing
         if (postsToInsert.length > 0) {
-            const quickInserts = await Promise.all(postsToInsert.map(async mapped => {
+            const quickInserts = (await Promise.all(postsToInsert.map(async mapped => {
                 //For Mastodon, use content (HTML) instead of text_body; for Bluesky use text_body
                 const contentToPass = platform === 'mastodon' ? mapped.content : mapped.text_body;
                 const html = await htmlGenerator(contentToPass, mapped.media);
+                if (!html || html.trim() === '') return null;
                 const has_text = (mapped.text_body?.length || 0) > 0;
                 return {
                     post_id: mapped.post_id,
@@ -79,13 +82,14 @@ export async function processQuick(platform, accountId, posts, htmlGenerator, in
                     media: mapped.media,
                     cid: mapped.cid || null
                 };
-            }));
+            }))).filter(p => p !== null);
             const updateFields = [
                 'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
                 'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
                 'score', 'replies', 'fetched_at', 'expired',
                 'channel', 'author', 'author_did', 'author_photo', 'url', 'media', 'cid'
             ];
+            if (quickInserts.length === 0) return 0;
             await ExternalPosts.bulkCreate(quickInserts, {
                 updateOnDuplicate: updateFields,
                 logging: false

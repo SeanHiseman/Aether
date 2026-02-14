@@ -10,7 +10,11 @@ export function mapMastodonToExternal(toot, instance) {
 		const quotedText = quotedHtmlContent.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
 		//Extract quoted post media
 		const quotedAttachments = Array.isArray(quoted.media_attachments)
-			? quoted.media_attachments.map(m => ({ url: m.url, type: m.type }))
+			? quoted.media_attachments.map(m => ({
+				url: m.url || m.remote_url || m.preview_url || null,
+				type: m.type || 'unknown',
+				description: m.description || ''
+			}))
 			: [];
 		const quotedCard = quoted.card ? {
 			url: quoted.card.url,
@@ -36,14 +40,18 @@ export function mapMastodonToExternal(toot, instance) {
 	}
 	const media = {
 		attachments: Array.isArray(toot.media_attachments)
-			? toot.media_attachments.map(m => ({ url: m.url, type: m.type }))
+			? toot.media_attachments.map(m => ({
+				url: m.url || m.remote_url || m.preview_url || null,
+				type: m.type || 'unknown',
+				description: m.description || ''
+			}))
 			: [],
-		card: toot.card ? {
+		card: toot.card && toot.card.url ? {
 			url: toot.card.url,
-			title: toot.card.title,
-			description: toot.card.description,
-			image: toot.card.image,
-			hostname: toot.card.provider_name || (toot.card.url ? new URL(toot.card.url).hostname : null)
+			title: toot.card.title || '',
+			description: toot.card.description || '',
+			image: toot.card.image || null,
+			hostname: toot.card.provider_name || (() => { try { return new URL(toot.card.url).hostname; } catch { return ''; } })()
 		} : null,
 		quotedPost: quotedPost
 	};
