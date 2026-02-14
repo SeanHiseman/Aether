@@ -243,12 +243,14 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 						<>
 							<div className="choose-algorithm">
 								<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
-									<div
-										className="form-select dropdown-trigger"
-										onClick={() => setOptionsOpen(o => !o)}
-									>
+									<div className="form-select dropdown-trigger" onClick={() => setOptionsOpen(o => !o)}>
 										{assignedAlgorithmId
-											? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
+											? (
+												<>
+													<span className="faded-text">Assigned algorithm:</span>
+													{` ${algorithms.find(a => a?.algorithm_id === assignedAlgorithmId)?.algorithm_name}`}
+												</>
+											)
 											: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
 									</div>
 									{optionsOpen && (
@@ -273,18 +275,18 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 												</label>
 											</li>}
 											{algorithms.map(a => {
-												const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
+												const isCurrentlyAssigned = a?.algorithm_id === assignedAlgorithmId;
 												return (
 													<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
-														<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
+														<label onClick={() => selectRadio(a?.algorithm_id)} style={{ cursor:'pointer' }}>
 															{!display && isAuthenticated && <input
 																checked={isCurrentlyAssigned}
 																name="algorithm"
 																readOnly
 																type="radio"
-																value={a.algorithm_id}
+																value={a?.algorithm_id}
 															/>}		
-															{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
+															{a?.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
 														</label>
 														<button
 															className="small-icon"
