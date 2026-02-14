@@ -24,18 +24,29 @@ export async function GenerateBlueskyHTML(textBody, media) {
 					`;
 				}
 			}
-			//Videos - show thumbnail with play indicator linking to original post
+			//Videos and GIFs
 			if (media.videos && Array.isArray(media.videos)) {
 				for (const vid of media.videos) {
-					if (!vid.thumbnail) continue;
-					html += `
-						<div class="content-block media-block video-thumbnail" data-blockid="${crypto.randomUUID()}" data-align="center" style="position: relative; cursor: pointer;">
-							<img src="${escapeHtml(vid.thumbnail)}" alt="Video thumbnail" />
-							<div class="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-								<span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
+					if (vid.url) {
+						//Playable video/GIF - render as video element
+						html += `
+							<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+								<video controls playsinline style="max-width: 100%;">
+									<source src="${escapeHtml(vid.url)}" />
+								</video>
 							</div>
-						</div>
-					`;
+						`;
+					} else if (vid.thumbnail) {
+						//No playable URL - show thumbnail with play indicator
+						html += `
+							<div class="content-block media-block video-thumbnail" data-blockid="${crypto.randomUUID()}" data-align="center" style="position: relative; cursor: pointer;">
+								<img src="${escapeHtml(vid.thumbnail)}" alt="Video thumbnail" />
+								<div class="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+									<span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
+								</div>
+							</div>
+						`;
+					}
 				}
 			}
 			//External link card
@@ -65,8 +76,17 @@ export async function GenerateBlueskyHTML(textBody, media) {
 			for (const m of media) {
 				if (!m.url && !m.thumbnail) continue;
 				const isVideo = m.type === 'video' || m.url?.match(/\.(mp4|webm|mov|m4v)$/i) || m.url?.includes('.m3u8');
-				if (isVideo && m.thumbnail) {
-					//Show video thumbnail with play indicator
+				if (isVideo && m.url) {
+					//Playable video/GIF
+					html += `
+						<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+							<video controls playsinline style="max-width: 100%;">
+								<source src="${escapeHtml(m.url)}" />
+							</video>
+						</div>
+					`;
+				} else if (isVideo && m.thumbnail) {
+					//No playable URL - show thumbnail with play indicator
 					html += `
 						<div class="content-block media-block video-thumbnail" data-blockid="${crypto.randomUUID()}" data-align="center" style="position: relative; cursor: pointer;">
 							<img src="${escapeHtml(m.thumbnail)}" alt="Video thumbnail" />

@@ -71,10 +71,13 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 							const src = video.querySelector('source');
 							parsed.push({
 								align,
+								autoplay: video.hasAttribute('autoplay'),
 								fileType: src?.type || '',
 								id,
 								isImage: false,
 								isVideo: true,
+								loop: video.hasAttribute('loop'),
+								muted: video.hasAttribute('muted'),
 								type: 'media',
 								url: src?.src || '',
 							});
@@ -230,7 +233,15 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 						if (block?.isImage) return <img alt="Uploaded Media" key={i} src={block?.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} />;
 						if (block?.isVideo) {
 							return (
-								<video controls key={i} style={styleObj}>
+								<video
+									key={i}
+									style={styleObj}
+									controls={!block?.autoplay}
+									autoPlay={block?.autoplay || false}
+									loop={block?.loop || false}
+									muted={block?.muted || block?.autoplay || false}
+									playsInline
+								>
 									<source src={block?.url} type={block?.fileType || 'video/*'} />
 								</video>
 							);

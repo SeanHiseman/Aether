@@ -72,16 +72,27 @@ export async function GenerateRedditHTML(textBody, media) {
                 });
             }
         }
-        //Handle image/gallery posts
+        //Handle image/gallery posts (may include GIFs as MP4)
         const mediaItems = Array.isArray(media) ? media : [];
         for (const item of mediaItems) {
             const url = item?.source?.url?.replace(/&amp;/g, '&');
             if (!url) continue;
-            html += `
-                <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                    <img src="${url}" alt="Reddit media" />
-                </div>
-            `;
+            const isVideoUrl = /\.(mp4|webm|gifv)(\?|$)/i.test(url);
+            if (isVideoUrl) {
+                html += `
+                    <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                        <video autoplay loop muted playsinline style="max-width: 100%;">
+                            <source src="${escapeHtml(url)}" />
+                        </video>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                        <img src="${escapeHtml(url)}" alt="Reddit media" />
+                    </div>
+                `;
+            }
         }
         const result = html.trim();
         //Log warning if content is empty

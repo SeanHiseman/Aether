@@ -15,11 +15,30 @@ export async function GenerateMastodonHTML(htmlContent, media) {
         if (media?.attachments && Array.isArray(media.attachments)) {
             for (const m of media.attachments) {
                 if (!m.url) continue;
-                out += `
-                    <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                        <img src="${m.url}" alt="Mastodon media" />
-                    </div>
-                `;
+                if (m.type === 'gifv') {
+                    //GIFs on Mastodon are MP4s that should autoplay and loop
+                    out += `
+                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                            <video autoplay loop muted playsinline style="max-width: 100%;">
+                                <source src="${escapeHtml(m.url)}" type="video/mp4" />
+                            </video>
+                        </div>
+                    `;
+                } else if (m.type === 'video') {
+                    out += `
+                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                            <video controls playsinline style="max-width: 100%;">
+                                <source src="${escapeHtml(m.url)}" type="video/mp4" />
+                            </video>
+                        </div>
+                    `;
+                } else {
+                    out += `
+                        <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                            <img src="${escapeHtml(m.url)}" alt="Mastodon media" />
+                        </div>
+                    `;
+                }
             }
         }
         //Create card (link preview)

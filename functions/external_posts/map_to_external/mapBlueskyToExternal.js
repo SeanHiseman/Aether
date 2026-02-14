@@ -24,7 +24,7 @@ export function mapBlueskyToExternal(item) {
 				alt: img.alt || ''
 			}));
 		}
-		//Handle videos (app.bsky.embed.video#view)
+		//Handle videos and GIFs (app.bsky.embed.video#view)
 		if (embedType.includes('video') || embed.playlist) {
 			const videoUrl = embed.playlist || embed.video?.playlist || null;
 			const thumbnail = embed.thumbnail || embed.video?.thumbnail || null;
