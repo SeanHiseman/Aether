@@ -246,10 +246,9 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 									<div className="form-select dropdown-trigger" onClick={() => setOptionsOpen(o => !o)}>
 										{assignedAlgorithmId
 											? (
-												<>
-													<span className="faded-text">Assigned algorithm:</span>
-													{` ${algorithms.find(a => a?.algorithm_id === assignedAlgorithmId)?.algorithm_name}`}
-												</>
+												<span>
+													<span className="faded-text">Assigned algorithm:</span> {algorithms.find(a => a?.algorithm_id === assignedAlgorithmId)?.algorithm_name}
+												</span>
 											)
 											: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
 									</div>
