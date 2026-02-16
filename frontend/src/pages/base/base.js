@@ -54,6 +54,7 @@ const BaseLayout = () => {
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
 	const [imageSrc, setImageSrc] = useState(null);   
     const [isFeedNameValid, setIsFeedNameValid] = useState(true); 
+    const [isLinkedInInApp, setIsLinkedInInApp] = useState(false);
     const location = useLocation();
 	const [mobileOpen, setMobileOpen] = useState(null);
     const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -77,6 +78,13 @@ const BaseLayout = () => {
             } 
         })
     );
+
+    useEffect(() => {
+		const userAgent = navigator.userAgent || '';
+		if (/LinkedIn/i.test(userAgent)) {
+			setIsLinkedInInApp(true);
+		}
+	}, []);
 
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
     
@@ -919,10 +927,16 @@ const BaseLayout = () => {
                             </Link>
                             <p className="small-text faded-text" style={{ fontWeight: '500', textAlign: 'center' }}>Social media you control</p>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
-                                    <FcGoogle size={20} />
-                                    <span>Google login</span>
-                                </button>
+                                {isLinkedInInApp ? (
+                                    <div className="error-message" style={{ marginBottom: '10px' }}>
+                                        Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
+                                    </div>
+                                ) : (
+                                    <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                                        <FcGoogle size={20} />
+                                        <span>Login with Google</span>
+                                    </button>
+                                )}
                                 <div className="divider-container">
                                     <div className="divider-line" />
                                     <span className="divider-text">or</span>
@@ -1031,10 +1045,16 @@ const BaseLayout = () => {
             />
             {!isAuthenticated && mobileOpen !== "left" && (
                 <footer className="mobile-auth-footer">
-                    <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
-                        <FcGoogle size={20} />
-                        <span>Google</span>
-                    </button>
+                    {isLinkedInInApp ? (
+                        <div className="error-message" style={{ marginBottom: '10px' }}>
+                            Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
+                        </div>
+                    ) : (
+                        <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                            <FcGoogle size={20} />
+                            <span>Google login</span>
+                        </button>
+                    )}
                     <Link to="/join" className="large-icon">
                         <FaArrowRight />
                         <p className="icon-text">Join</p>

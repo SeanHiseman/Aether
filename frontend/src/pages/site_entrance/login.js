@@ -16,6 +16,7 @@ const Login = () => {
     const [showBlueskyForm, setShowBlueskyForm] = useState(false);
     const [blueskyHandle, setBlueskyHandle] = useState('');
     const [blueskyAppPassword, setBlueskyAppPassword] = useState('');
+    const [isLinkedInInApp, setIsLinkedInInApp] = useState(false);
     const [showBlueskyPassword, setShowBlueskyPassword] = useState(false);
     const [blueskyLoading, setBlueskyLoading] = useState(false);
     const location = useLocation();
@@ -175,10 +176,16 @@ const Login = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
-                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button" style={{ width: '100%' }}>
-                    <FcGoogle size={20} />
-                    <span>Login with Google</span>
-                </button>
+                {isLinkedInInApp ? (
+                    <div className="error-message" style={{ marginBottom: '10px' }}>
+                        Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
+                    </div>
+                ) : (
+                    <button type="button" onClick={handleGoogleLogin} className="google-oauth-button" style={{ width: '100%' }}>
+                        <FcGoogle size={20} />
+                        <span>Login with Google</span>
+                    </button>
+                )}
                 <button type="button" onClick={() => setShowBlueskyForm(!showBlueskyForm)} className="bluesky-oauth-button" style={{ width: '100%', marginTop: '10px' }}>
                     <img src="/media/site_images/social_sites/bluesky-logo.png" alt="Bluesky" style={{ width: 20, height: 20 }} />
                     <span>Login with Bluesky</span>
