@@ -1046,7 +1046,7 @@ const BaseLayout = () => {
             {!isAuthenticated && mobileOpen !== "left" && (
                 <footer className="mobile-auth-footer">
                     {isLinkedInInApp ? (
-                        <div className="error-message" style={{ marginBottom: '10px' }}>
+                        <div className="error-message" style={{ marginBottom: '10px', maxWidth: '45vw' }}>
                             Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
                         </div>
                     ) : (
