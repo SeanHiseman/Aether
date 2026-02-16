@@ -177,7 +177,7 @@ const Login = () => {
                 </div>
                 <p className="error-message">{errorMessage}</p>
                 {isLinkedInInApp ? (
-                    <div className="error-message" style={{ marginBottom: '10px' }}>
+                    <div className="tiny-text">
                         Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
                     </div>
                 ) : (

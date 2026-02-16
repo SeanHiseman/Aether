@@ -928,7 +928,7 @@ const BaseLayout = () => {
                             <p className="small-text faded-text" style={{ fontWeight: '500', textAlign: 'center' }}>Social media you control</p>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 {isLinkedInInApp ? (
-                                    <div className="error-message" style={{ marginBottom: '10px' }}>
+                                    <div className="tiny-text">
                                         Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
                                     </div>
                                 ) : (
