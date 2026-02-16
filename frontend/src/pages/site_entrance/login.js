@@ -110,7 +110,14 @@ const Login = () => {
     const handleGoogleLogin = () => {
         const from = location.state?.from || location.pathname;
         localStorage.setItem('authRedirectPath', from);
-        window.location.href = `${window.location.origin}/api/auth/google`;
+        const userAgent = navigator.userAgent || '';
+        const isLinkedInInApp = /LinkedIn/i.test(userAgent);
+        const googleAuthUrl = `${window.location.origin}/api/auth/google`;
+        if (isLinkedInInApp) {
+            window.open(googleAuthUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            window.location.href = googleAuthUrl;
+        }
     };
 
     const togglePasswordVisibility = () => {

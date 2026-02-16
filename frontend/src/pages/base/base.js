@@ -421,10 +421,17 @@ const BaseLayout = () => {
         resetDragState();
     };
 
-    const handleGoogleLogin = () => {
-        localStorage.setItem('authRedirectPath', location.pathname);
-        window.location.href = `${window.location.origin}/api/auth/google`;
-    };
+	const handleGoogleLogin = () => {
+		localStorage.setItem('authRedirectPath', location.pathname);
+		const googleAuthUrl = `${window.location.origin}/api/auth/google`;
+		const isLinkedInInApp = /LinkedIn/i.test(navigator.userAgent || '');
+		if (isLinkedInInApp) {
+			window.open(googleAuthUrl, '_blank', 'noopener,noreferrer');
+		} else {
+			window.location.href = googleAuthUrl;
+		}
+	};
+
 
     const nameModalConfirm = async (deepFeedName) => {
         if (!pendingDeepFeed) return;
