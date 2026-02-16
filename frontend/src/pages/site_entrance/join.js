@@ -155,10 +155,16 @@ const Join = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
-                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button" style={{ width: '100%' }}>
-                    <FcGoogle size={20} />
-                    <span>Join with Google</span>
-                </button>
+                {isLinkedInInApp ? (
+                    <div className="tiny-text">
+                        Google sign-in is not supported inside LinkedIn. Please open this page in your browser to continue.
+                    </div>
+                ) : (
+                    <button type="button" onClick={handleGoogleLogin} className="google-oauth-button" style={{ width: '100%' }}>
+                        <FcGoogle size={20} />
+                        <span>Join with Google</span>
+                    </button>
+                )}
                 <button type="button" onClick={() => setShowBlueskyForm(!showBlueskyForm)} className="bluesky-oauth-button" style={{ width: '100%', marginTop: '10px' }}>
                     <img src="/media/site_images/social_sites/bluesky-logo.png" alt="Bluesky" style={{ width: 20, height: 20 }} />
                     <span>Join with Bluesky</span>
