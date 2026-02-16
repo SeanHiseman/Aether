@@ -20,6 +20,7 @@ const Join = () => {
     const [showBlueskyForm, setShowBlueskyForm] = useState(false);
     const [blueskyHandle, setBlueskyHandle] = useState('');
     const [blueskyAppPassword, setBlueskyAppPassword] = useState('');
+    const [isLinkedInInApp, setIsLinkedInInApp] = useState(false);
     const [showBlueskyPassword, setShowBlueskyPassword] = useState(false);
     const [blueskyLoading, setBlueskyLoading] = useState(false);
     const { refreshTheme } = useContext(ThemeContext);
@@ -28,6 +29,13 @@ const Join = () => {
     const emailValidation = ValidateEmail(email);
     const isDisabled = !confirmPassword || !email || !password || !username || !emailValidation.valid || password !== confirmPassword || Boolean(errorMessage);
     const isBlueskyDisabled = !blueskyHandle || !blueskyAppPassword || blueskyLoading;
+
+    useEffect(() => {
+		const userAgent = navigator.userAgent || '';
+		if (/LinkedIn/i.test(userAgent)) {
+			setIsLinkedInInApp(true);
+		}
+	}, []);
 
     const handleBlueskyJoin = async (event) => {
         event.preventDefault();

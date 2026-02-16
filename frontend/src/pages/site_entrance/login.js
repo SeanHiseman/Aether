@@ -24,6 +24,13 @@ const Login = () => {
     const isDisabled = !password || !usernameOrEmail;
     const isBlueskyDisabled = !blueskyHandle || !blueskyAppPassword || blueskyLoading;
 
+    useEffect(() => {
+		const userAgent = navigator.userAgent || '';
+		if (/LinkedIn/i.test(userAgent)) {
+			setIsLinkedInInApp(true);
+		}
+	}, []);
+
     const handleLogin = async (event) => {
         event.preventDefault();
         try {
