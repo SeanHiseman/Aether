@@ -1258,9 +1258,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     ) : (
                                                                         <>
                                                                             {data.isImage ? (
-                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
+                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh', height: 'auto', width: 'auto', objectFit: 'contain' } : { display: 'block', maxWidth: '100%', maxHeight: '60vh', height: 'auto', width: 'auto', objectFit: 'contain' }} />
                                                                             ) : data.isVideo ? (
-                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
+                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh', height: 'auto', width: 'auto', objectFit: 'contain' } : { display: 'block', maxWidth: '100%', maxHeight: '60vh', height: 'auto', width: 'auto', objectFit: 'contain' }} />
                                                                             ) : (
                                                                                 <p>Unsupported</p>
                                                                             )}

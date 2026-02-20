@@ -566,7 +566,7 @@ CREATE TABLE feed_channel_views (
 
 CREATE TABLE IF NOT EXISTS saved_external_posts (
     save_id             CHAR(36)        NOT NULL PRIMARY KEY,
-    post_id             VARCHAR(255)    NOT NULL,
+    post_id             VARCHAR(255)    CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
     saver_id            CHAR(36)        NOT NULL,
     saved_channel_id    CHAR(36)        NOT NULL,
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -578,7 +578,7 @@ CREATE TABLE IF NOT EXISTS saved_external_posts (
     FOREIGN KEY (post_id) REFERENCES external_posts(post_id) ON DELETE CASCADE,
     FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
     FOREIGN KEY (saved_channel_id) REFERENCES saved_post_channels(channel_id) ON DELETE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_1;
 ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_2;
@@ -652,10 +652,10 @@ CREATE INDEX idx_external_posts_score
 ON external_posts(source, expired, score DESC, created_at_remote DESC, post_id);
 
 ALTER TABLE messages
-ADD COLUMN media JSON DEFAULT NULL,
+ADD COLUMN media JSON DEFAULT NULL;
 
 ALTER TABLE feed_channel_messages
-ADD COLUMN media JSON DEFAULT NULL,
+ADD COLUMN media JSON DEFAULT NULL;
 
 ALTER TABLE external_account_meta
 ADD COLUMN follower_count INT DEFAULT 0 AFTER post_count;
