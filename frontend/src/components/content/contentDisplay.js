@@ -217,7 +217,7 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 								<a href={block?.href} target="_blank" rel="noopener noreferrer" className="link-preview-card">
 									{block?.image && (
 										<div className="link-preview-image">
-											<img src={block?.image} alt={block?.title || ''} />
+											<img src={block?.image} alt={block?.title || ''} loading="lazy" />
 										</div>
 									)}
 									<div className="link-preview-content">
@@ -244,7 +244,7 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 							block?.align === 'center'
 								? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: (isAuthenticated ? '60vh' : '55vh'), cursor: 'pointer' }
 								: { height: 'auto', maxWidth: '100%', maxHeight: (isAuthenticated ? (isAuthenticated ? '60vh' : '55vh') : '55vh'), cursor: 'pointer' };
-						if (block?.isImage) return <img alt="Uploaded Media" key={i} src={block?.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} />;
+						if (block?.isImage) return <img alt="Uploaded Media" key={i} src={block?.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} loading="lazy" />;
 						if (block?.isVideo) {
 							return (
 								<video
@@ -255,6 +255,7 @@ const ContentDisplay = ({ post, isAuthenticated = false, isFullscreen = false, o
 									loop={block?.loop || false}
 									muted={block?.muted || block?.autoplay || false}
 									playsInline
+									preload="metadata"
 								>
 									<source src={block?.url} type={block?.fileType || 'video/*'} />
 								</video>

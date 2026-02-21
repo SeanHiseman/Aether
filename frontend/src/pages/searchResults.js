@@ -10,7 +10,7 @@ import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 
-const FETCH_LIMIT = 100;
+const FETCH_LIMIT = 50;
 
 const SearchResults = () => {
 	const [dropdownOpen, setDropdownOpen] = useState(false);

@@ -463,7 +463,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
 
 router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { connectedAccounts = [], deepFeedId, excludePostIds = [], followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
+        const { connectedAccounts = [], deepFeedId, excludePostIds = [], followedFeedIds: rawFollowedFeedIds, limit = 50, offset = 0, recentUpvotes } = req.body;
         let followedFeedIds = rawFollowedFeedIds || [];
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
@@ -998,7 +998,7 @@ router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, asyn
 router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;
-        const { limit = 100, offset = 0, channelId } = req.query;
+        const { limit = 50, offset = 0, channelId } = req.query;
 
         //Build where clause
         const whereClause = { saver_id: saverId };

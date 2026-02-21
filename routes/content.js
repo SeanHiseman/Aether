@@ -66,7 +66,7 @@ function formatPostQuotedExternal(post) {
 
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
-		const { channelId, feedId, includeReposts = true, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
+		const { channelId, feedId, includeReposts = true, isGroup, isMain, isSingle, postId, limit = 50, offset = 0, recentUpvotes } = req.body;
 		const userId = req.session.user_id;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
@@ -569,7 +569,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-        const { followedFeedIds, recentUpvotes, excludePostIds = [], limit = 100, offset = 0 } = req.body;
+        const { followedFeedIds, recentUpvotes, excludePostIds = [], limit = 50, offset = 0 } = req.body;
 		const userId = req?.session?.user_id || null;
         const viewerId = req?.session?.viewer_id || null;
 		//console.log(`[EXPLORE] Request: limit=${limit}, offset=${offset}, userId=${userId}, viewerId=${viewerId}`);
@@ -653,7 +653,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 
 router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { channel_id, poster_id, limit = 100, offset = 0 } = req.query;
+        const { channel_id, poster_id, limit = 50, offset = 0 } = req.query;
         const drafts = await PostDrafts.findAll({
             where: { channel_id, poster_id },
             order: [['updated_at','DESC']],

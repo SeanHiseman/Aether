@@ -343,7 +343,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 			<div className="content-metadata">
 				<div className="feed-info">
 					<a className="feed-link" target="_blank" rel="noopener noreferrer" href={post?.poster?.profile_url}>
-						<img className="medium-feed-photo" src={normaliseAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+						<img className="medium-feed-photo" src={normaliseAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} loading="lazy" />
 						<p className="feed-list-text">{post?.poster?.username ?? 'Anonymous'}</p>
 					</a>
 				</div>

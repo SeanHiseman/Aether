@@ -6,7 +6,7 @@ import RepostIndicator from '../content/repostIndicator';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-const FETCH_LIMIT = 100;
+const FETCH_LIMIT = 50;
 
 const PostChannel = ({ channelId, channelName, feed, includeGroup, includeReplies = true, includeReposts, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
 	const { channel_name, post_id } = useParams();

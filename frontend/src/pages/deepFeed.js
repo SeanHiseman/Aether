@@ -15,7 +15,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext, useLocation, useParams } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
-const FETCH_LIMIT = 100;
+const FETCH_LIMIT = 50;
 
 //Handles combined feeds, as well as the following feed (which can include external posts)
 const DeepFeed = () => {

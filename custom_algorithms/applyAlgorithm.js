@@ -85,7 +85,7 @@ async function attachParentAndQuotedData(posts, includeOptions, viewerId, voteMa
 	});
 }
 
-async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId, excludePostIds = [] }) {
+async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 50, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId, excludePostIds = [] }) {
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -145,7 +145,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         //Decide whether to fetch with all attributes or exclude them up front
 		const fetchFullAttributes = !useChronological && !useStandardScore;
 		const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
-		const backendFetchTotal = (useChronological || useStandardScore) ? limit : Math.max(limit, 100);
+		const backendFetchTotal = limit;
 		const orderMode = (highChronology || lowVoteImpact ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
 
         //Collect recent upvoted posts for similarity comparison

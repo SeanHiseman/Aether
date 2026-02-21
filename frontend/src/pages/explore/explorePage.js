@@ -10,7 +10,7 @@ import PlatformConnect from "../../socialConnect/platformConnect";
 import SwipeableAside from "../../components/swipeableAside";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-const FETCH_LIMIT = 100;
+const FETCH_LIMIT = 50;
 
 const ExplorePage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
@@ -215,6 +215,7 @@ const ExplorePage = () => {
 	}, [refreshTrigger, fetchPosts, fetchFeeds, filter]);
 
 	const isInitialLoad = isLoading && posts.length === 0 && feeds.length === 0;
+	const isLoadingPosts = isLoading && posts.length === 0 && feeds.length > 0;
 
 	document.title = "Explore";
 	return (
@@ -228,6 +229,11 @@ const ExplorePage = () => {
 					<p className="large-text faded-text">All posts hidden</p>
 				) : (
 					<>
+						{isLoadingPosts && filter !== "feeds" && (
+							<div className="flex justify-center items-center" style={{ padding: '20px 0' }}>
+								<span className="large-text faded-text">Loading posts...</span>
+							</div>
+						)}
 						{filter === "all" && (
 							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) => item?.type === "post" ? (
@@ -276,6 +282,11 @@ const ExplorePage = () => {
 										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 									))}
 								</div>
+							</div>
+						)}
+						{isLoading && (posts.length > 0 || feeds.length > 0) && (
+							<div className="flex justify-center items-center" style={{ padding: '20px 0' }}>
+								<span className="large-text faded-text">Loading more...</span>
 							</div>
 						)}
 					</>
