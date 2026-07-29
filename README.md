@@ -1,6 +1,6 @@
-# Aether
+# Aether Social
 
-Aether is a social media platform built around user-configurable ranking algorithms — instead of a single fixed feed algorithm, each user (or "viewer") can define and apply their own scoring logic to determine what content they see, and where. It also aggregates content from external platforms (Bluesky, Mastodon, Reddit) alongside native posts.
+Aether Social is a social media platform built around user-configurable ranking algorithms — instead of a single fixed feed algorithm, each user (or "viewer") can define and apply their own scoring logic to determine what content they see, and where. It also aggregates content from external platforms (Bluesky, Mastodon, Reddit) alongside native posts.
 
 ## Tech stack
 
