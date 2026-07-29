@@ -8,3 +8,5 @@
 .qodo
 /algorithm_logs
 /custom_algorithms/twitter_validation.csv
+/.claude
+/.tokenslash
